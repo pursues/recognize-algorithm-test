@@ -30,6 +30,14 @@ cd /Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/helmet
 python3 helmet-test.py
 ```
 
+实时摄像头识别示例：
+
+```bash
+python3 helmet-test.py --camera usb
+python3 helmet-test.py --camera csi
+python3 helmet-test.py --camera 0
+```
+
 默认行为：
 
 - 默认读取当前目录下的 `best.pt`
@@ -37,6 +45,7 @@ python3 helmet-test.py
 - 默认在当前目录下创建 `outputs`
 - 默认生成可视化结果图，保存到 `outputs/predict`
 - 默认生成检测结果 JSON，保存到 `outputs/result.json`
+- 传入 `--camera` 时会打开摄像头实时识别，并在窗口中显示检测结果，按 `Q` 退出
 
 可选参数示例：
 
