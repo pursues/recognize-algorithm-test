@@ -1,0 +1,21 @@
+{
+  "feature": "helmet",
+  "display_name": "安全帽检测模型",
+  "model": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/helmet/best.pt",
+  "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/helmet/imgs/no-helmet-leijun.jpg",
+  "detections": [
+    {
+      "label": "Hardhat",
+      "confidence": 0.4296,
+      "xyxy": [
+        339.56,
+        8.88,
+        504.18,
+        193.7
+      ]
+    }
+  ],
+  "detected": true,
+  "save_vis": true,
+  "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/helmet/outputs"
+}

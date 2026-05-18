@@ -2,14 +2,49 @@
 
 安全帽模型与算法测试
 
-测试命令（这个 helmet是测试 helmet 文件夹下的模型）
-python3 helmet-test.py --save-vis
+当前 `helmet` 功能已经改成独立目录运行，模型、测试图片、脚本和输出结果都放在 `helmet` 目录下。
+把整个 `helmet` 目录单独拷走后，只要 Python 环境里安装了 `ultralytics`，也可以独立运行，不再依赖当前项目下的 `framework`、`feature_registry` 等公共代码。
 
-通用方法，写了一个 model-test.py 脚本
-python3 model-test.py --feature helmet --save-vis
+目录结构示例：
 
-如果之后要测试其他模型检测，只需要修改 feature 参数：XXX,而不需要再增加 XXX-test.py 脚本
-python3 model-test.py --feature XXX --save-vis
+```text
+helmet/
+├── best.pt
+├── helmet.py
+├── helmet-test.py
+├── imgs/
+│   └── helmet.jpg
+└── outputs/
+```
+
+首次使用建议安装依赖：
+
+```bash
+pip install ultralytics
+```
+
+进入 `helmet` 目录后执行：
+
+```bash
+cd /Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/helmet
+python3 helmet-test.py
+```
+
+默认行为：
+
+- 默认读取当前目录下的 `best.pt`
+- 默认读取当前目录下 `imgs/helmet.jpg`
+- 默认在当前目录下创建 `outputs`
+- 默认生成可视化结果图，保存到 `outputs/predict`
+- 默认生成检测结果 JSON，保存到 `outputs/result.json`
+
+可选参数示例：
+
+```bash
+python3 helmet-test.py --image imgs/helmet.jpg --model best.pt
+python3 helmet-test.py --output-dir outputs
+python3 helmet-test.py --no-save-vis
+```
 
 
 
