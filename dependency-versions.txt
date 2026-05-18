@@ -1,0 +1,18 @@
+python==3.11.9
+ultralyticsplus==0.1.0
+ultralytics==8.0.239
+sahi==0.11.36
+hub-sdk==0.0.24
+fire==0.7.1
+protobuf==3.20.3
+pybboxes==0.1.6
+py-cpuinfo==9.0.0
+shapely==2.1.2
+terminaltables==3.1.10
+termcolor==3.3.0
+
+# Install target
+vendor/
+
+# Note
+# The project code prioritizes loading packages from ./vendor.
