@@ -1,0 +1,47 @@
+{
+  "feature": "smoking",
+  "display_name": "抽烟/香烟识别模型",
+  "model": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/smoking/best.pt",
+  "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/smoking/imgs/smoking.jpeg",
+  "expected_labels": [
+    "cigarette",
+    "smoking"
+  ],
+  "detections": [
+    {
+      "label": "face",
+      "confidence": 0.8841,
+      "xyxy": [
+        547.62,
+        115.01,
+        724.39,
+        312.22
+      ]
+    },
+    {
+      "label": "cigarette",
+      "confidence": 0.7623,
+      "xyxy": [
+        426.0,
+        307.31,
+        507.41,
+        355.28
+      ]
+    }
+  ],
+  "smoking_detections": [
+    {
+      "label": "cigarette",
+      "confidence": 0.7623,
+      "xyxy": [
+        426.0,
+        307.31,
+        507.41,
+        355.28
+      ]
+    }
+  ],
+  "detected": true,
+  "save_vis": true,
+  "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/smoking/outputs"
+}
