@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import os
 from pathlib import Path
+import sys
 from typing import Any
 from typing import Iterable
 from typing import Sequence
@@ -10,9 +10,12 @@ from typing import Sequence
 NOT_MASK_DIR = Path(__file__).resolve().parent
 TEST_IMAGES_DIR = NOT_MASK_DIR / "imgs"
 OUTPUTS_DIR = NOT_MASK_DIR / "outputs"
-HF_CACHE_DIR = NOT_MASK_DIR / ".hf-cache"
+MODELS_DIR = NOT_MASK_DIR / "models"
+DEFAULT_LOCAL_MODEL_PATH = MODELS_DIR / "face-mask-detection"
+VENDOR_DIR = NOT_MASK_DIR / "vendor"
 
-os.environ.setdefault("HF_HOME", str(HF_CACHE_DIR))
+if VENDOR_DIR.exists() and str(VENDOR_DIR) not in sys.path:
+    sys.path.insert(0, str(VENDOR_DIR))
 
 try:
     import cv2
@@ -32,11 +35,8 @@ EXPECTED_LABELS = (
     "Face_Mask Not_Found",
     "Face_Mask Found",
 )
-DEFAULT_HF_MODEL_NAME = "DamarJati/Face-Mask-Detection"
-ALTERNATIVE_HF_MODEL_NAMES = (
-    "prithivMLmods/Face-Mask-Detection",
-    "AkshatSurolia/ViT-FaceMask-Finetuned",
-)
+DEFAULT_MODEL_PATH = DEFAULT_LOCAL_MODEL_PATH
+DEFAULT_MODEL_NAME = str(DEFAULT_MODEL_PATH)
 DEFAULT_IMAGE_PATH = TEST_IMAGES_DIR / "not-mask-leijun.jpg"
 DEFAULT_SCORE_THRESHOLD = 0.6
 DEFAULT_FACE_PADDING_RATIO = 0.18
@@ -80,10 +80,11 @@ class ImagePrediction:
 FEATURE_CONFIG = NotMaskConfig()
 
 __all__ = [
-    "ALTERNATIVE_HF_MODEL_NAMES",
     "DEFAULT_FACE_PADDING_RATIO",
-    "DEFAULT_HF_MODEL_NAME",
     "DEFAULT_IMAGE_PATH",
+    "DEFAULT_LOCAL_MODEL_PATH",
+    "DEFAULT_MODEL_NAME",
+    "DEFAULT_MODEL_PATH",
     "DEFAULT_MIN_FACE_SIZE",
     "DEFAULT_SCORE_THRESHOLD",
     "DISPLAY_NAME",
@@ -91,14 +92,15 @@ __all__ = [
     "FEATURE_CONFIG",
     "FEATURE_NAME",
     "FaceDetection",
-    "HF_CACHE_DIR",
     "IMAGE_SUFFIXES",
     "ImagePrediction",
+    "MODELS_DIR",
     "NOT_MASK_DIR",
     "NotMaskConfig",
     "NotMaskDetector",
     "OUTPUTS_DIR",
     "TEST_IMAGES_DIR",
+    "VENDOR_DIR",
     "annotate_prediction",
     "build_csi_gstreamer_pipeline",
     "iter_image_files",
@@ -113,7 +115,7 @@ def initialize_runtime() -> None:
     if _RUNTIME_INITIALIZED:
         return
 
-    HF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
     OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
     _RUNTIME_INITIALIZED = True
 
@@ -250,7 +252,7 @@ def _label_score_mapping(id2label: dict[int, str], scores: Sequence[float]) -> d
 class NotMaskDetector:
     def __init__(
         self,
-        model_name: str = DEFAULT_HF_MODEL_NAME,
+        model_name: str = DEFAULT_MODEL_NAME,
         score_threshold: float = DEFAULT_SCORE_THRESHOLD,
         face_padding_ratio: float = DEFAULT_FACE_PADDING_RATIO,
         min_face_size: int = DEFAULT_MIN_FACE_SIZE,
@@ -263,9 +265,13 @@ class NotMaskDetector:
         self.face_padding_ratio = face_padding_ratio
         self.min_face_size = min_face_size
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model_path = Path(model_name)
+        if not self.model_path.exists():
+            raise FileNotFoundError(f"本地模型目录不存在: {self.model_path}")
+        model_source = str(self.model_path.resolve())
 
-        self.processor = AutoImageProcessor.from_pretrained(model_name)
-        self.model = AutoModelForImageClassification.from_pretrained(model_name)
+        self.processor = AutoImageProcessor.from_pretrained(model_source)
+        self.model = AutoModelForImageClassification.from_pretrained(model_source)
         self.model.eval()
         self.model.to(self.device)
 

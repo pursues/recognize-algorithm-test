@@ -7,7 +7,7 @@
     "Face_Mask Not_Found",
     "Face_Mask Found"
   ],
-  "model": "DamarJati/Face-Mask-Detection",
+  "model": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/not_mask/models/face-mask-detection",
   "score_threshold": 0.6,
   "save_vis": true,
   "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/not_mask/outputs",

@@ -4,9 +4,9 @@ import argparse
 import json
 from pathlib import Path
 
-from not_mask import DEFAULT_HF_MODEL_NAME
 from not_mask import DEFAULT_IMAGE_PATH
 from not_mask import DEFAULT_MIN_FACE_SIZE
+from not_mask import DEFAULT_MODEL_NAME
 from not_mask import DEFAULT_SCORE_THRESHOLD
 from not_mask import FEATURE_CONFIG
 from not_mask import OUTPUTS_DIR
@@ -31,8 +31,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--model",
-        default=DEFAULT_HF_MODEL_NAME,
-        help="Hugging Face 模型名或本地模型目录",
+        default=DEFAULT_MODEL_NAME,
+        help="本地模型目录；默认使用当前目录下的本地模型",
     )
     parser.add_argument(
         "--camera",
