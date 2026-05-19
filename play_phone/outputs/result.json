@@ -8,45 +8,13 @@
   "save_vis": true,
   "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/play_phone/outputs",
   "summary": {
-    "total_images": 2,
+    "total_images": 1,
     "detected_images": 1,
-    "undetected_images": 1,
+    "undetected_images": 0,
     "total_play_phone_events": 1,
-    "avg_events_per_image": 0.5
+    "avg_events_per_image": 1.0
   },
   "items": [
-    {
-      "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/play_phone/imgs/no-phone-leijun.jpg",
-      "detected": false,
-      "face_boxes": [
-        [
-          726.0,
-          147.0,
-          756.0,
-          177.0
-        ],
-        [
-          321.0,
-          54.0,
-          450.0,
-          183.0
-        ]
-      ],
-      "detections": [
-        {
-          "label": "person",
-          "confidence": 0.9204,
-          "xyxy": [
-            276.45,
-            14.82,
-            854.45,
-            576.87
-          ]
-        }
-      ],
-      "play_phone_events": [],
-      "vis_path": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/play_phone/outputs/predict/no-phone-leijun.jpg"
-    },
     {
       "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/play_phone/imgs/phone-game.jpg",
       "detected": true,

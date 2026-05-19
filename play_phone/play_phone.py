@@ -80,6 +80,7 @@ class ImagePrediction:
 FEATURE_CONFIG = PlayPhoneConfig()
 
 __all__ = [
+    "build_csi_gstreamer_pipeline",
     "DEFAULT_CONF",
     "DEFAULT_IMAGE_PATH",
     "DEFAULT_IOU",
@@ -91,6 +92,7 @@ __all__ = [
     "FEATURE_NAME",
     "IMAGE_SUFFIXES",
     "ImagePrediction",
+    "open_camera",
     "OUTPUTS_DIR",
     "PLAY_PHONE_DIR",
     "PlayPhoneConfig",
@@ -122,7 +124,7 @@ def initialize_runtime() -> None:
 
 def _require_cv2() -> None:
     if cv2 is None:
-        raise RuntimeError("未安装 opencv-python，无法进行图片读取与结果可视化。")
+        raise RuntimeError("未安装 opencv-python，无法使用摄像头实时识别或结果可视化。")
 
 
 def _load_image(image_path: Path):
@@ -143,6 +145,48 @@ def _build_face_detector():
     if cascade.empty():
         return None
     return cascade
+
+
+def build_csi_gstreamer_pipeline(
+    width: int = 1280,
+    height: int = 720,
+    framerate: int = 30,
+    flip_method: int = 0,
+) -> str:
+    return (
+        "nvarguscamerasrc ! "
+        f"video/x-raw(memory:NVMM), width={width}, height={height}, framerate={framerate}/1 ! "
+        f"nvvidconv flip-method={flip_method} ! "
+        "video/x-raw, format=BGRx ! "
+        "videoconvert ! "
+        "video/x-raw, format=BGR ! "
+        "appsink"
+    )
+
+
+def open_camera(
+    camera: str | int = "usb",
+    width: int = 1280,
+    height: int = 720,
+    framerate: int = 30,
+    flip_method: int = 0,
+):
+    _require_cv2()
+    if isinstance(camera, int):
+        return cv2.VideoCapture(camera)
+    if camera == "csi":
+        gst_str = build_csi_gstreamer_pipeline(
+            width=width,
+            height=height,
+            framerate=framerate,
+            flip_method=flip_method,
+        )
+        return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
+    if camera == "usb":
+        return cv2.VideoCapture(0, cv2.CAP_ANY)
+    if camera.isdigit():
+        return cv2.VideoCapture(int(camera))
+    raise ValueError(f"不支持的摄像头类型: {camera}，可选值为 csi、usb 或数字序号")
 
 
 def _detect_faces(face_detector: Any, image: Any) -> list[list[float]]:
@@ -369,6 +413,24 @@ class PlayPhoneDetector:
         )
         return self._build_prediction(results[0], image_path=image_path, image=image)
 
+    def predict_frame(
+        self,
+        frame: Any,
+        conf: float | None = None,
+        iou: float | None = None,
+        verbose: bool = False,
+        frame_name: str = "camera_frame",
+    ) -> tuple[ImagePrediction, Any]:
+        results = self.model.predict(
+            source=frame,
+            conf=self.model.overrides["conf"] if conf is None else conf,
+            iou=self.model.overrides["iou"] if iou is None else iou,
+            verbose=verbose,
+        )
+        result = results[0]
+        prediction = self._build_prediction(result, image_path=Path(frame_name), image=frame)
+        return prediction, result
+
     def predict_directory(self, image_dir: str | Path) -> list[ImagePrediction]:
         image_dir = Path(image_dir)
         if not image_dir.exists():
@@ -379,9 +441,89 @@ class PlayPhoneDetector:
             predictions.append(self.predict_image(image_path))
         return predictions
 
+    def run_camera_inference(
+        self,
+        camera: str | int = "csi",
+        conf: float | None = None,
+        iou: float | None = None,
+        frame_log_interval: int = 10,
+        window_name: str = "Play Phone Detection",
+        width: int = 1280,
+        height: int = 720,
+        framerate: int = 30,
+        flip_method: int = 0,
+        quit_key: str = "q",
+        warmup_frames: int = 5,
+        max_failed_reads: int = 30,
+    ) -> None:
+        _require_cv2()
+        cap = open_camera(
+            camera=camera,
+            width=width,
+            height=height,
+            framerate=framerate,
+            flip_method=flip_method,
+        )
+        if not cap.isOpened():
+            raise RuntimeError(f"无法打开摄像头: {camera}")
 
-def annotate_prediction(prediction: ImagePrediction):
-    image = _load_image(prediction.image_path)
+        print(f"实时识别已启动，摄像头={camera}，按 '{quit_key.upper()}' 退出。")
+        frame_count = 0
+        failed_reads = 0
+
+        try:
+            for _ in range(max(warmup_frames, 0)):
+                cap.read()
+
+            while True:
+                try:
+                    ret, frame = cap.read()
+                except Exception as exc:
+                    raise RuntimeError(
+                        f"读取摄像头帧失败: camera={camera}。请检查摄像头类型、驱动或 GStreamer 配置。"
+                    ) from exc
+
+                if not ret:
+                    failed_reads += 1
+                    if failed_reads >= max_failed_reads:
+                        raise RuntimeError(
+                            f"连续 {failed_reads} 次读取摄像头帧失败: camera={camera}。"
+                        )
+                    continue
+                failed_reads = 0
+
+                frame_count += 1
+                prediction, _ = self.predict_frame(
+                    frame,
+                    conf=conf,
+                    iou=iou,
+                    verbose=False,
+                    frame_name=f"camera:{camera}",
+                )
+
+                if frame_log_interval > 0 and frame_count % frame_log_interval == 0:
+                    if prediction.phone_usage_events:
+                        for event in prediction.phone_usage_events:
+                            print(
+                                "[DETECT] play_phone "
+                                f"score={event.score:.2f} "
+                                f"holding={event.holding_phone} "
+                                f"looking={event.looking_phone}"
+                            )
+                    else:
+                        print("[DETECT] No play-phone behavior in this frame.")
+
+                annotated_frame = _annotate_image(frame.copy(), prediction)
+                cv2.imshow(window_name, annotated_frame)
+
+                if cv2.waitKey(1) & 0xFF == ord(quit_key.lower()):
+                    break
+        finally:
+            cap.release()
+            cv2.destroyAllWindows()
+
+
+def _annotate_image(image: Any, prediction: ImagePrediction):
     if cv2 is None:
         return image
 
@@ -427,6 +569,11 @@ def annotate_prediction(prediction: ImagePrediction):
         cv2.rectangle(image, (phx1, phy1), (phx2, phy2), (0, 0, 255), 3)
 
     return image
+
+
+def annotate_prediction(prediction: ImagePrediction):
+    image = _load_image(prediction.image_path)
+    return _annotate_image(image, prediction)
 
 
 def save_prediction_visualization(

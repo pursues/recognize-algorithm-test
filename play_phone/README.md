@@ -61,10 +61,29 @@ python3.11 play_phone/play_phone_test.py --image play_phone/imgs/phone-game.jpg
 python3.11 play_phone/play_phone_test.py --model yolov8s.pt --conf 0.2 --iou 0.45
 ```
 
+### 5. USB 摄像头实时识别
+
+```bash
+python3.11 play_phone/play_phone_test.py --camera usb
+```
+
+### 6. CSI 摄像头实时识别
+
+```bash
+python3.11 play_phone/play_phone_test.py --camera csi --width 1280 --height 720 --framerate 30
+```
+
+### 7. 指定数字摄像头序号
+
+```bash
+python3.11 play_phone/play_phone_test.py --camera 0
+```
+
 ## 输出说明
 
 - `outputs/result.json`：保存所有图片的检测明细、玩手机判定结果、命中的启发式规则
 - `outputs/predict/*.jpg`：保存带框可视化图片
+- 实时摄像头模式下会弹出窗口显示检测结果，按 `Q` 退出
 
 ## 判定说明
 
@@ -75,3 +94,11 @@ python3.11 play_phone/play_phone_test.py --model yolov8s.pt --conf 0.2 --iou 0.4
 3. 结合手机是否位于人体上半身区域、是否接近人体中心、人脸与手机的相对位置等规则给出 `play_phone` 判定
 
 因此它更适合做一个无需训练、可快速上线的基础版方案。如果后续需要更高精度，建议再引入专门的姿态估计、视线估计，或者专门标注“玩手机”数据集进行微调。
+
+## 实时识别说明
+
+- `--camera usb`：使用默认 USB 摄像头
+- `--camera csi`：使用 Jetson 常见 CSI 摄像头管线
+- `--camera 0`：使用数字序号打开摄像头
+- 可通过 `--frame-log-interval` 控制打印频率
+- 可通过 `--window-name` 自定义窗口标题
