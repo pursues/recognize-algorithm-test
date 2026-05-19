@@ -5,6 +5,10 @@ import json
 from pathlib import Path
 
 from play_phone import DEFAULT_IMAGE_PATH
+from play_phone import DEFAULT_CAMERA_FRAMERATE
+from play_phone import DEFAULT_CAMERA_HEIGHT
+from play_phone import DEFAULT_CAMERA_WIDTH
+from play_phone import DEFAULT_INFER_EVERY_N_FRAMES
 from play_phone import DEFAULT_MODEL_NAME
 from play_phone import FEATURE_CONFIG
 from play_phone import OUTPUTS_DIR
@@ -39,9 +43,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--conf", type=float, help="置信度阈值")
     parser.add_argument("--iou", type=float, help="NMS IoU 阈值")
     parser.add_argument("--frame-log-interval", type=int, default=10, help="每隔多少帧打印一次检测结果")
-    parser.add_argument("--width", type=int, default=1280, help="CSI 摄像头宽度")
-    parser.add_argument("--height", type=int, default=720, help="CSI 摄像头高度")
-    parser.add_argument("--framerate", type=int, default=30, help="CSI 摄像头帧率")
+    parser.add_argument(
+        "--infer-every-n-frames",
+        type=int,
+        default=DEFAULT_INFER_EVERY_N_FRAMES,
+        help="实时识别时每多少帧跑一次模型推理",
+    )
+    parser.add_argument("--width", type=int, default=DEFAULT_CAMERA_WIDTH, help="CSI 摄像头宽度")
+    parser.add_argument("--height", type=int, default=DEFAULT_CAMERA_HEIGHT, help="CSI 摄像头高度")
+    parser.add_argument("--framerate", type=int, default=DEFAULT_CAMERA_FRAMERATE, help="CSI 摄像头帧率")
     parser.add_argument("--flip-method", type=int, default=0, help="CSI 摄像头翻转方式")
     parser.add_argument("--warmup-frames", type=int, default=5, help="摄像头预热读取帧数")
     parser.add_argument("--max-failed-reads", type=int, default=30, help="连续读帧失败多少次后终止")
@@ -111,6 +121,7 @@ def main() -> None:
             conf=args.conf,
             iou=args.iou,
             frame_log_interval=args.frame_log_interval,
+            infer_every_n_frames=args.infer_every_n_frames,
             window_name=args.window_name,
             width=args.width,
             height=args.height,

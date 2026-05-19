@@ -70,8 +70,11 @@ python3.11 play_phone/play_phone_test.py --camera usb
 ### 6. CSI 摄像头实时识别
 
 ```bash
-python3.11 play_phone/play_phone_test.py --camera csi --width 1280 --height 720 --framerate 30
+python3.11 play_phone/play_phone_test.py --camera csi
 ```
+
+默认已经设置为每 `30` 帧跑一次模型推理。
+非推理帧不会复用旧框，只会在画面左上角显示“最近一次检测结果”。
 
 ### 7. 指定数字摄像头序号
 
@@ -100,5 +103,14 @@ python3.11 play_phone/play_phone_test.py --camera 0
 - `--camera usb`：使用默认 USB 摄像头
 - `--camera csi`：使用 Jetson 常见 CSI 摄像头管线
 - `--camera 0`：使用数字序号打开摄像头
+- `CSI` 默认已优化为 `640x480 @ 15fps`，如果你机器性能足够，再手动提高 `--width`、`--height`、`--framerate`
+- 实时识别默认 `--infer-every-n-frames 30`，即每 30 帧跑一次模型
+- 非推理帧不绘制旧检测框，只显示最近一次检测结果文字
 - 可通过 `--frame-log-interval` 控制打印频率
 - 可通过 `--window-name` 自定义窗口标题
+
+例如你也可以显式指定：
+
+```bash
+python3.11 play_phone/play_phone_test.py --camera csi --infer-every-n-frames 30
+```

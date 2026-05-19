@@ -30,6 +30,10 @@ DEFAULT_MODEL_NAME = "yolov8n.pt"
 DEFAULT_IMAGE_PATH = TEST_IMAGES_DIR / "phone-game.jpg"
 DEFAULT_CONF = 0.25
 DEFAULT_IOU = 0.45
+DEFAULT_CAMERA_WIDTH = 640
+DEFAULT_CAMERA_HEIGHT = 480
+DEFAULT_CAMERA_FRAMERATE = 15
+DEFAULT_INFER_EVERY_N_FRAMES = 30
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 PHONE_LABELS = {"cell phone", "cellphone", "mobile phone", "phone"}
 PERSON_LABELS = {"person"}
@@ -148,9 +152,9 @@ def _build_face_detector():
 
 
 def build_csi_gstreamer_pipeline(
-    width: int = 1280,
-    height: int = 720,
-    framerate: int = 30,
+    width: int = DEFAULT_CAMERA_WIDTH,
+    height: int = DEFAULT_CAMERA_HEIGHT,
+    framerate: int = DEFAULT_CAMERA_FRAMERATE,
     flip_method: int = 0,
 ) -> str:
     return (
@@ -166,9 +170,9 @@ def build_csi_gstreamer_pipeline(
 
 def open_camera(
     camera: str | int = "usb",
-    width: int = 1280,
-    height: int = 720,
-    framerate: int = 30,
+    width: int = DEFAULT_CAMERA_WIDTH,
+    height: int = DEFAULT_CAMERA_HEIGHT,
+    framerate: int = DEFAULT_CAMERA_FRAMERATE,
     flip_method: int = 0,
 ):
     _require_cv2()
@@ -447,13 +451,14 @@ class PlayPhoneDetector:
         conf: float | None = None,
         iou: float | None = None,
         frame_log_interval: int = 10,
+        infer_every_n_frames: int = DEFAULT_INFER_EVERY_N_FRAMES,
         window_name: str = "Play Phone Detection",
-        width: int = 1280,
-        height: int = 720,
-        framerate: int = 30,
+        width: int = DEFAULT_CAMERA_WIDTH,
+        height: int = DEFAULT_CAMERA_HEIGHT,
+        framerate: int = DEFAULT_CAMERA_FRAMERATE,
         flip_method: int = 0,
         quit_key: str = "q",
-        warmup_frames: int = 5,
+        warmup_frames: int = 30,
         max_failed_reads: int = 30,
     ) -> None:
         _require_cv2()
@@ -466,10 +471,15 @@ class PlayPhoneDetector:
         )
         if not cap.isOpened():
             raise RuntimeError(f"无法打开摄像头: {camera}")
+        if infer_every_n_frames <= 0:
+            raise ValueError("infer_every_n_frames 必须大于 0")
 
         print(f"实时识别已启动，摄像头={camera}，按 '{quit_key.upper()}' 退出。")
         frame_count = 0
         failed_reads = 0
+        latest_prediction: ImagePrediction | None = None
+        latest_infer_frame_index = 0
+        latest_result_text = "最近一次检测结果: 暂无"
 
         try:
             for _ in range(max(warmup_frames, 0)):
@@ -493,27 +503,72 @@ class PlayPhoneDetector:
                 failed_reads = 0
 
                 frame_count += 1
-                prediction, _ = self.predict_frame(
-                    frame,
-                    conf=conf,
-                    iou=iou,
-                    verbose=False,
-                    frame_name=f"camera:{camera}",
+                should_infer = (
+                    latest_prediction is None
+                    or frame_count == 1
+                    or frame_count % infer_every_n_frames == 0
                 )
 
-                if frame_log_interval > 0 and frame_count % frame_log_interval == 0:
-                    if prediction.phone_usage_events:
-                        for event in prediction.phone_usage_events:
-                            print(
-                                "[DETECT] play_phone "
-                                f"score={event.score:.2f} "
-                                f"holding={event.holding_phone} "
-                                f"looking={event.looking_phone}"
-                            )
-                    else:
-                        print("[DETECT] No play-phone behavior in this frame.")
+                if should_infer:
+                    latest_prediction, _ = self.predict_frame(
+                        frame,
+                        conf=conf,
+                        iou=iou,
+                        verbose=False,
+                        frame_name=f"camera:{camera}",
+                    )
+                    latest_infer_frame_index = frame_count
 
-                annotated_frame = _annotate_image(frame.copy(), prediction)
+                    if frame_log_interval > 0 and frame_count % frame_log_interval == 0:
+                        if latest_prediction.phone_usage_events:
+                            for event in latest_prediction.phone_usage_events:
+                                print(
+                                    "[DETECT] play_phone "
+                                    f"score={event.score:.2f} "
+                                    f"holding={event.holding_phone} "
+                                    f"looking={event.looking_phone}"
+                                )
+                        else:
+                            print("[DETECT] No play-phone behavior in this frame.")
+
+                    if latest_prediction.phone_usage_events:
+                        best_event = max(
+                            latest_prediction.phone_usage_events,
+                            key=lambda event: event.score,
+                        )
+                        latest_result_text = (
+                            "最近一次检测结果: play_phone "
+                            f"score={best_event.score:.2f} "
+                            f"holding={best_event.holding_phone} "
+                            f"looking={best_event.looking_phone}"
+                        )
+                    else:
+                        latest_result_text = "最近一次检测结果: 未检测到玩手机"
+
+                annotated_frame = frame.copy()
+                if should_infer and latest_prediction is not None:
+                    annotated_frame = _annotate_image(annotated_frame, latest_prediction)
+                if cv2 is not None:
+                    cv2.putText(
+                        annotated_frame,
+                        f"infer_every={infer_every_n_frames} latest={latest_infer_frame_index}",
+                        (16, 28),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.7,
+                        (0, 255, 0),
+                        2,
+                        cv2.LINE_AA,
+                    )
+                    cv2.putText(
+                        annotated_frame,
+                        latest_result_text,
+                        (16, 58),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.6,
+                        (0, 255, 255),
+                        2,
+                        cv2.LINE_AA,
+                    )
                 cv2.imshow(window_name, annotated_frame)
 
                 if cv2.waitKey(1) & 0xFF == ord(quit_key.lower()):
