@@ -1,0 +1,116 @@
+{
+  "feature": "play_phone",
+  "display_name": "玩手机识别",
+  "expected_labels": [
+    "cell phone"
+  ],
+  "model": "yolov8n.pt",
+  "save_vis": true,
+  "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/play_phone/outputs",
+  "summary": {
+    "total_images": 2,
+    "detected_images": 1,
+    "undetected_images": 1,
+    "total_play_phone_events": 1,
+    "avg_events_per_image": 0.5
+  },
+  "items": [
+    {
+      "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/play_phone/imgs/no-phone-leijun.jpg",
+      "detected": false,
+      "face_boxes": [
+        [
+          726.0,
+          147.0,
+          756.0,
+          177.0
+        ],
+        [
+          321.0,
+          54.0,
+          450.0,
+          183.0
+        ]
+      ],
+      "detections": [
+        {
+          "label": "person",
+          "confidence": 0.9204,
+          "xyxy": [
+            276.45,
+            14.82,
+            854.45,
+            576.87
+          ]
+        }
+      ],
+      "play_phone_events": [],
+      "vis_path": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/play_phone/outputs/predict/no-phone-leijun.jpg"
+    },
+    {
+      "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/play_phone/imgs/phone-game.jpg",
+      "detected": true,
+      "face_boxes": [],
+      "detections": [
+        {
+          "label": "person",
+          "confidence": 0.7341,
+          "xyxy": [
+            105.76,
+            38.03,
+            1571.04,
+            964.84
+          ]
+        },
+        {
+          "label": "bed",
+          "confidence": 0.3031,
+          "xyxy": [
+            2.57,
+            422.03,
+            1452.77,
+            1052.28
+          ]
+        },
+        {
+          "label": "cell phone",
+          "confidence": 0.2853,
+          "xyxy": [
+            946.96,
+            801.85,
+            1351.21,
+            937.4
+          ]
+        }
+      ],
+      "play_phone_events": [
+        {
+          "person_xyxy": [
+            105.76,
+            38.03,
+            1571.04,
+            964.84
+          ],
+          "phone_xyxy": [
+            946.96,
+            801.85,
+            1351.21,
+            937.4
+          ],
+          "face_xyxy": null,
+          "score": 0.82,
+          "holding_phone": true,
+          "looking_phone": false,
+          "matched_rules": [
+            "phone_inside_person",
+            "phone_near_body_center",
+            "reasonable_phone_size",
+            "holding_phone",
+            "phone_centered_without_face"
+          ]
+        }
+      ],
+      "vis_path": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/play_phone/outputs/predict/phone-game.jpg"
+    }
+  ]
+}
