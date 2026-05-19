@@ -18,7 +18,6 @@ not_mask/
 │   └── not-mask-leijun.jpg
 ├── models/
 │   └── face-mask-detection/ # 本地预训练模型目录
-├── vendor/                 # 随目录打包的纯 Python 依赖
 ├── outputs/                # 运行后自动生成，可按需删除
 ├── not_mask.py             # 未戴口罩识别核心模块
 ├── not_mask_test.py        # 命令行测试入口
@@ -40,7 +39,7 @@ not_mask/
 - `models/face-mask-detection`
 
 当前脚本默认直接加载本地 `models/face-mask-detection`，不依赖 `.hf-cache/`。
-同时，`transformers` 等纯 Python 依赖已经打包到 `vendor/`，运行时会优先从当前目录加载。
+模型推理基于设备上已有的 `torch`、`torchvision`、`opencv-python`、`Pillow` 运行时。
 
 为了减少环境复杂度，当前落地版本固定使用已经下载到本地目录的权重做人脸裁剪分类。
 
@@ -119,7 +118,7 @@ python3.11 not_mask_test.py --camera csi --warmup-frames 15 --max-failed-reads 1
 - 当前目录已经去掉 `.hf-cache/` 方案，模型改为本地 `models/face-mask-detection`
 - 模型目录只保留推理必需文件
 - `outputs/` 不是运行必需内容，可以随时删除，程序下次运行会自动重新生成
-- `vendor/` 中是随目录打包的纯 Python 依赖，用来避免额外安装 `transformers`
+- 当前实现不再依赖 `transformers`、`regex`、`safetensors` 这类额外 Python 包
 
 ## 输出结果
 
@@ -142,4 +141,4 @@ python3.11 not_mask_test.py --camera csi --warmup-frames 15 --max-failed-reads 1
 - `--camera csi` 使用的是和 `helmet` 一样的 GStreamer 管线，适合 Jetson 常见 CSI 摄像头
 - 当前实现只依赖 `not_mask/` 目录自身内容，不再依赖外层项目目录；单独拷走该目录后，安装好依赖即可运行
 - `--model` 现在只接受本地模型目录路径，不再支持在线仓库名
-- 当前目录已经尽量自包含，但仍默认复用设备上已有的 `torch`、`cv2`、`PIL`、`numpy` 运行时
+- 当前目录已经尽量自包含，但仍默认复用设备上已有的 `torch`、`torchvision`、`cv2`、`PIL`、`numpy` 运行时

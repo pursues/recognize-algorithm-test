@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from pathlib import Path
-import sys
 from typing import Any
 from typing import Iterable
 from typing import Sequence
@@ -12,10 +12,6 @@ TEST_IMAGES_DIR = NOT_MASK_DIR / "imgs"
 OUTPUTS_DIR = NOT_MASK_DIR / "outputs"
 MODELS_DIR = NOT_MASK_DIR / "models"
 DEFAULT_LOCAL_MODEL_PATH = MODELS_DIR / "face-mask-detection"
-VENDOR_DIR = NOT_MASK_DIR / "vendor"
-
-if VENDOR_DIR.exists() and str(VENDOR_DIR) not in sys.path:
-    sys.path.insert(0, str(VENDOR_DIR))
 
 try:
     import cv2
@@ -24,8 +20,11 @@ except ImportError:  # pragma: no cover - depends on local environment
 
 from PIL import Image
 import torch
-from transformers import AutoImageProcessor
-from transformers import AutoModelForImageClassification
+from torchvision.models import swin_t
+from torchvision.transforms.functional import InterpolationMode
+from torchvision.transforms.functional import normalize
+from torchvision.transforms.functional import pil_to_tensor
+from torchvision.transforms.functional import resize
 
 FEATURE_NAME = "not_mask"
 DISPLAY_NAME = "未戴口罩识别"
@@ -100,7 +99,6 @@ __all__ = [
     "NotMaskDetector",
     "OUTPUTS_DIR",
     "TEST_IMAGES_DIR",
-    "VENDOR_DIR",
     "annotate_prediction",
     "build_csi_gstreamer_pipeline",
     "iter_image_files",
@@ -249,6 +247,112 @@ def _label_score_mapping(id2label: dict[int, str], scores: Sequence[float]) -> d
     }
 
 
+def _read_json_file(file_path: Path) -> dict[str, Any]:
+    return json.loads(file_path.read_text(encoding="utf-8"))
+
+
+def _load_local_model_metadata(model_dir: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+    config_path = model_dir / "config.json"
+    preprocessor_path = model_dir / "preprocessor_config.json"
+    if not config_path.exists():
+        raise FileNotFoundError(f"模型配置文件不存在: {config_path}")
+    if not preprocessor_path.exists():
+        raise FileNotFoundError(f"预处理配置文件不存在: {preprocessor_path}")
+    return _read_json_file(config_path), _read_json_file(preprocessor_path)
+
+
+def _map_hf_swin_state_dict_to_torchvision(state_dict: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+    stage_features = {0: 1, 1: 3, 2: 5, 3: 7}
+    mapped: dict[str, torch.Tensor] = {}
+    qkv_parts: dict[tuple[int, int, str], dict[str, torch.Tensor]] = {}
+
+    for key, value in state_dict.items():
+        if key.startswith("swin.embeddings.patch_embeddings.projection."):
+            mapped[key.replace("swin.embeddings.patch_embeddings.projection", "features.0.0")] = value
+            continue
+        if key.startswith("swin.embeddings.norm."):
+            mapped[key.replace("swin.embeddings.norm", "features.0.2")] = value
+            continue
+        if key.startswith("swin.layernorm."):
+            mapped[key.replace("swin.layernorm", "norm")] = value
+            continue
+        if key.startswith("classifier."):
+            mapped[key.replace("classifier", "head")] = value
+            continue
+        if not key.startswith("swin.encoder.layers."):
+            continue
+
+        rest = key[len("swin.encoder.layers.") :]
+        stage_str, rest = rest.split(".", 1)
+        stage = int(stage_str)
+        base = f"features.{stage_features[stage]}"
+
+        if rest.startswith("blocks."):
+            _, block_str, rest = rest.split(".", 2)
+            block = int(block_str)
+            prefix = f"{base}.{block}"
+
+            if rest.startswith("layernorm_before."):
+                mapped[f"{prefix}.norm1.{rest.split('.', 1)[1]}"] = value
+            elif rest.startswith("layernorm_after."):
+                mapped[f"{prefix}.norm2.{rest.split('.', 1)[1]}"] = value
+            elif rest == "attention.self.relative_position_bias_table":
+                mapped[f"{prefix}.attn.relative_position_bias_table"] = value
+            elif rest == "attention.self.relative_position_index":
+                continue
+            elif rest.startswith("attention.self.query."):
+                qkv_parts.setdefault((stage, block, rest.rsplit(".", 1)[1]), {})["q"] = value
+            elif rest.startswith("attention.self.key."):
+                qkv_parts.setdefault((stage, block, rest.rsplit(".", 1)[1]), {})["k"] = value
+            elif rest.startswith("attention.self.value."):
+                qkv_parts.setdefault((stage, block, rest.rsplit(".", 1)[1]), {})["v"] = value
+            elif rest.startswith("attention.output.dense."):
+                mapped[f"{prefix}.attn.proj.{rest.rsplit('.', 1)[1]}"] = value
+            elif rest.startswith("intermediate.dense."):
+                mapped[f"{prefix}.mlp.0.{rest.split('.', 2)[2]}"] = value
+            elif rest.startswith("output.dense."):
+                mapped[f"{prefix}.mlp.3.{rest.split('.', 2)[2]}"] = value
+            continue
+
+        if rest.startswith("downsample."):
+            down_prefix = f"features.{stage_features[stage] + 1}"
+            if rest.startswith("downsample.reduction."):
+                mapped[f"{down_prefix}.reduction.{rest.split('.', 2)[2]}"] = value
+            elif rest.startswith("downsample.norm."):
+                mapped[f"{down_prefix}.norm.{rest.split('.', 2)[2]}"] = value
+
+    for (stage, block, suffix), parts in qkv_parts.items():
+        if not {"q", "k", "v"} <= set(parts):
+            raise RuntimeError(f"Swin 权重缺少完整的 QKV 参数: stage={stage}, block={block}, suffix={suffix}")
+        mapped[f"features.{stage_features[stage]}.{block}.attn.qkv.{suffix}"] = torch.cat(
+            [parts["q"], parts["k"], parts["v"]],
+            dim=0,
+        )
+
+    return mapped
+
+
+def _load_local_swin_model(model_dir: Path, num_classes: int) -> torch.nn.Module:
+    model_file = model_dir / "pytorch_model.bin"
+    if not model_file.exists():
+        raise FileNotFoundError(f"模型权重文件不存在: {model_file}")
+
+    raw_state_dict = torch.load(model_file, map_location="cpu")
+    state_dict = raw_state_dict.get("state_dict", raw_state_dict)
+    mapped_state_dict = _map_hf_swin_state_dict_to_torchvision(state_dict)
+    model = swin_t(weights=None, num_classes=num_classes)
+    missing_keys, unexpected_keys = model.load_state_dict(mapped_state_dict, strict=False)
+    missing_keys = [
+        key for key in missing_keys if not key.endswith("attn.relative_position_index")
+    ]
+    if missing_keys or unexpected_keys:
+        raise RuntimeError(
+            "Swin 本地权重映射失败: "
+            f"missing_keys={missing_keys[:10]}, unexpected_keys={unexpected_keys[:10]}"
+        )
+    return model
+
+
 class NotMaskDetector:
     def __init__(
         self,
@@ -268,23 +372,35 @@ class NotMaskDetector:
         self.model_path = Path(model_name)
         if not self.model_path.exists():
             raise FileNotFoundError(f"本地模型目录不存在: {self.model_path}")
-        model_source = str(self.model_path.resolve())
-
-        self.processor = AutoImageProcessor.from_pretrained(model_source)
-        self.model = AutoModelForImageClassification.from_pretrained(model_source)
+        self.model_config, self.preprocessor_config = _load_local_model_metadata(self.model_path)
+        config_labels = self.model_config.get("id2label", {}) or {}
+        self.id2label = {int(index): label for index, label in config_labels.items()}
+        self.image_size = self.preprocessor_config.get("size", {})
+        self.image_height = int(self.image_size.get("height", self.model_config.get("image_size", 224)))
+        self.image_width = int(self.image_size.get("width", self.model_config.get("image_size", 224)))
+        self.image_mean = list(self.preprocessor_config.get("image_mean", [0.485, 0.456, 0.406]))
+        self.image_std = list(self.preprocessor_config.get("image_std", [0.229, 0.224, 0.225]))
+        self.model = _load_local_swin_model(
+            self.model_path,
+            num_classes=max(len(self.id2label), 1),
+        )
         self.model.eval()
         self.model.to(self.device)
-
-        config_labels = getattr(self.model.config, "id2label", {}) or {}
-        self.id2label = {int(index): label for index, label in config_labels.items()}
         self.face_detector = _build_face_detector()
 
     def _classify_pil_image(self, image: Image.Image) -> tuple[str, float, bool, dict[str, float]]:
-        inputs = self.processor(images=image, return_tensors="pt")
-        inputs = {name: tensor.to(self.device) for name, tensor in inputs.items()}
+        image = image.convert("RGB")
+        image = resize(
+            image,
+            [self.image_height, self.image_width],
+            interpolation=InterpolationMode.BICUBIC,
+        )
+        pixel_values = pil_to_tensor(image).float() / 255.0
+        pixel_values = normalize(pixel_values, mean=self.image_mean, std=self.image_std)
+        pixel_values = pixel_values.unsqueeze(0).to(self.device)
 
         with torch.no_grad():
-            logits = self.model(**inputs).logits
+            logits = self.model(pixel_values)
             probabilities = torch.softmax(logits, dim=1)[0].detach().cpu().tolist()
 
         label_scores = _label_score_mapping(self.id2label, probabilities)

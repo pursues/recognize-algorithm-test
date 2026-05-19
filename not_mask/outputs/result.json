@@ -9,40 +9,17 @@
   ],
   "model": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/not_mask/models/face-mask-detection",
   "score_threshold": 0.6,
-  "save_vis": true,
+  "save_vis": false,
   "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/not_mask/outputs",
   "summary": {
-    "total_images": 2,
+    "total_images": 1,
     "detected_images": 1,
-    "undetected_images": 1,
-    "total_faces": 2,
+    "undetected_images": 0,
+    "total_faces": 1,
     "no_mask_faces": 1,
     "avg_faces_per_image": 1.0
   },
   "items": [
-    {
-      "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/not_mask/imgs/mask.png",
-      "detected": false,
-      "face_detections": [
-        {
-          "label": "WithMask",
-          "confidence": 0.9991,
-          "xyxy": [
-            363.0,
-            14.0,
-            430.0,
-            81.0
-          ],
-          "is_no_mask": false,
-          "source": "face",
-          "label_scores": {
-            "WithMask": 0.9991,
-            "WithoutMask": 0.0009
-          }
-        }
-      ],
-      "vis_path": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/not_mask/outputs/predict/mask.png"
-    },
     {
       "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/not_mask/imgs/not-mask-leijun.jpg",
       "detected": true,
@@ -64,7 +41,7 @@
           }
         }
       ],
-      "vis_path": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/not_mask/outputs/predict/not-mask-leijun.jpg"
+      "vis_path": null
     }
   ]
 }
