@@ -1,0 +1,177 @@
+{
+  "items": [
+    {
+      "feature": "safety_vest",
+      "display_name": "反光背心/安全马甲识别",
+      "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/work_clothes/imgs/clothe.png",
+      "positive_labels": [
+        "person_with_vest",
+        "Safety Vest",
+        "Vest",
+        "Reflective-Jacket"
+      ],
+      "negative_labels": [
+        "No Vest",
+        "NO-Safety Vest"
+      ],
+      "detections": [
+        {
+          "label": "person",
+          "raw_class_name": "person_with_vest",
+          "confidence": 0.8482,
+          "xyxy": [
+            504.0,
+            112.0,
+            660.0,
+            353.0
+          ],
+          "status": "with_safety_vest",
+          "is_work_clothes": true
+        },
+        {
+          "label": "person",
+          "raw_class_name": "person_with_helmet",
+          "confidence": 0.6484,
+          "xyxy": [
+            557.0,
+            14.0,
+            654.0,
+            70.0
+          ],
+          "status": "other_ppe",
+          "is_work_clothes": false
+        },
+        {
+          "label": "person",
+          "raw_class_name": "person_with_vest",
+          "confidence": 0.5934,
+          "xyxy": [
+            5.0,
+            139.0,
+            160.0,
+            407.0
+          ],
+          "status": "with_safety_vest",
+          "is_work_clothes": true
+        },
+        {
+          "label": "person",
+          "raw_class_name": "person_with_helmet",
+          "confidence": 0.5934,
+          "xyxy": [
+            31.0,
+            33.0,
+            131.0,
+            92.0
+          ],
+          "status": "other_ppe",
+          "is_work_clothes": false
+        },
+        {
+          "label": "person",
+          "raw_class_name": "person_with_vest",
+          "confidence": 0.5745,
+          "xyxy": [
+            345.0,
+            122.0,
+            489.0,
+            382.0
+          ],
+          "status": "with_safety_vest",
+          "is_work_clothes": true
+        },
+        {
+          "label": "person",
+          "raw_class_name": "person_with_helmet",
+          "confidence": 0.5589,
+          "xyxy": [
+            359.0,
+            24.0,
+            451.0,
+            80.0
+          ],
+          "status": "other_ppe",
+          "is_work_clothes": false
+        }
+      ],
+      "work_clothes_detections": [
+        {
+          "label": "person",
+          "raw_class_name": "person_with_vest",
+          "confidence": 0.8482,
+          "xyxy": [
+            504.0,
+            112.0,
+            660.0,
+            353.0
+          ],
+          "status": "with_safety_vest",
+          "is_work_clothes": true
+        },
+        {
+          "label": "person",
+          "raw_class_name": "person_with_vest",
+          "confidence": 0.5934,
+          "xyxy": [
+            5.0,
+            139.0,
+            160.0,
+            407.0
+          ],
+          "status": "with_safety_vest",
+          "is_work_clothes": true
+        },
+        {
+          "label": "person",
+          "raw_class_name": "person_with_vest",
+          "confidence": 0.5745,
+          "xyxy": [
+            345.0,
+            122.0,
+            489.0,
+            382.0
+          ],
+          "status": "with_safety_vest",
+          "is_work_clothes": true
+        }
+      ],
+      "detected": true,
+      "save_vis": true,
+      "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/work_clothes/outputs"
+    },
+    {
+      "feature": "safety_vest",
+      "display_name": "反光背心/安全马甲识别",
+      "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/work_clothes/imgs/no-phone-leijun.jpg",
+      "positive_labels": [
+        "person_with_vest",
+        "Safety Vest",
+        "Vest",
+        "Reflective-Jacket"
+      ],
+      "negative_labels": [
+        "No Vest",
+        "NO-Safety Vest"
+      ],
+      "detections": [
+        {
+          "label": "person",
+          "raw_class_name": "No Vest",
+          "confidence": 0.7657,
+          "xyxy": [
+            277.0,
+            170.0,
+            612.0,
+            579.0
+          ],
+          "status": "without_safety_vest",
+          "is_work_clothes": false
+        }
+      ],
+      "work_clothes_detections": [],
+      "detected": false,
+      "save_vis": true,
+      "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/work_clothes/outputs"
+    }
+  ]
+}
