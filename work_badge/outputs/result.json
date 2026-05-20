@@ -1,0 +1,523 @@
+{
+  "feature": "work_badge",
+  "display_name": "工作牌识别",
+  "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/work_badge/imgs/badge.png",
+  "zero_shot_model": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/work_badge/models/grounding-dino-tiny",
+  "queries": [
+    "employee badge",
+    "work badge",
+    "name tag",
+    "id card",
+    "lanyard badge",
+    "identification badge"
+  ],
+  "detections": [
+    {
+      "label": "person",
+      "confidence": 0.9603,
+      "person_xyxy": [
+        2.0,
+        23.0,
+        214.0,
+        376.0
+      ],
+      "chest_xyxy": [
+        27.0,
+        65.0,
+        189.0,
+        312.0
+      ],
+      "status": "with_work_badge",
+      "is_wearing_badge": true,
+      "badge_detections": [
+        {
+          "label": "employee badge work badge",
+          "confidence": 0.3439,
+          "xyxy": [
+            105.0,
+            280.0,
+            136.0,
+            312.0
+          ]
+        },
+        {
+          "label": "employee badge work badge",
+          "confidence": 0.2694,
+          "xyxy": [
+            106.0,
+            280.0,
+            136.0,
+            312.0
+          ]
+        },
+        {
+          "label": "cardyard badge identification badge",
+          "confidence": 0.2163,
+          "xyxy": [
+            106.0,
+            280.0,
+            136.0,
+            312.0
+          ]
+        },
+        {
+          "label": "name tag card lanyard badge identification badge",
+          "confidence": 0.2643,
+          "xyxy": [
+            106.0,
+            280.0,
+            136.0,
+            312.0
+          ]
+        },
+        {
+          "label": "employee badge work badge",
+          "confidence": 0.2718,
+          "xyxy": [
+            102.0,
+            276.0,
+            139.0,
+            312.0
+          ]
+        },
+        {
+          "label": "employee badge work badge",
+          "confidence": 0.2357,
+          "xyxy": [
+            111.0,
+            289.0,
+            130.0,
+            311.0
+          ]
+        }
+      ]
+    },
+    {
+      "label": "person",
+      "confidence": 0.9014,
+      "person_xyxy": [
+        335.0,
+        0.0,
+        594.0,
+        367.0
+      ],
+      "chest_xyxy": [
+        366.0,
+        44.0,
+        563.0,
+        301.0
+      ],
+      "status": "with_work_badge",
+      "is_wearing_badge": true,
+      "badge_detections": [
+        {
+          "label": "employee badge work badge name tag badge",
+          "confidence": 0.313,
+          "xyxy": [
+            413.0,
+            236.0,
+            449.0,
+            275.0
+          ]
+        },
+        {
+          "label": "employee badge work badge card badge",
+          "confidence": 0.2517,
+          "xyxy": [
+            413.0,
+            237.0,
+            449.0,
+            274.0
+          ]
+        },
+        {
+          "label": "id card",
+          "confidence": 0.2403,
+          "xyxy": [
+            413.0,
+            237.0,
+            449.0,
+            274.0
+          ]
+        },
+        {
+          "label": "work badge",
+          "confidence": 0.193,
+          "xyxy": [
+            411.0,
+            234.0,
+            451.0,
+            276.0
+          ]
+        },
+        {
+          "label": "cardyard badge identification badge",
+          "confidence": 0.2046,
+          "xyxy": [
+            413.0,
+            237.0,
+            449.0,
+            274.0
+          ]
+        },
+        {
+          "label": "employee badge work badge name tag",
+          "confidence": 0.2488,
+          "xyxy": [
+            408.0,
+            231.0,
+            454.0,
+            279.0
+          ]
+        },
+        {
+          "label": "card",
+          "confidence": 0.2101,
+          "xyxy": [
+            410.0,
+            233.0,
+            452.0,
+            277.0
+          ]
+        }
+      ]
+    },
+    {
+      "label": "person",
+      "confidence": 0.6324,
+      "person_xyxy": [
+        183.0,
+        21.0,
+        379.0,
+        372.0
+      ],
+      "chest_xyxy": [
+        207.0,
+        63.0,
+        355.0,
+        309.0
+      ],
+      "status": "with_work_badge",
+      "is_wearing_badge": true,
+      "badge_detections": [
+        {
+          "label": "employee badge work badge name tag identification badge",
+          "confidence": 0.3443,
+          "xyxy": [
+            261.0,
+            264.0,
+            288.0,
+            303.0
+          ]
+        },
+        {
+          "label": "employee badge work badge identification badge",
+          "confidence": 0.2425,
+          "xyxy": [
+            261.0,
+            265.0,
+            287.0,
+            302.0
+          ]
+        },
+        {
+          "label": "employee badge work badge",
+          "confidence": 0.2554,
+          "xyxy": [
+            258.0,
+            262.0,
+            291.0,
+            304.0
+          ]
+        },
+        {
+          "label": "card badge",
+          "confidence": 0.1996,
+          "xyxy": [
+            261.0,
+            264.0,
+            288.0,
+            302.0
+          ]
+        },
+        {
+          "label": "work badge name",
+          "confidence": 0.1977,
+          "xyxy": [
+            255.0,
+            259.0,
+            294.0,
+            305.0
+          ]
+        },
+        {
+          "label": "name tag lanyard badge identification badge",
+          "confidence": 0.2373,
+          "xyxy": [
+            261.0,
+            264.0,
+            288.0,
+            303.0
+          ]
+        }
+      ]
+    }
+  ],
+  "wearing_badge_persons": [
+    {
+      "label": "person",
+      "confidence": 0.9603,
+      "person_xyxy": [
+        2.0,
+        23.0,
+        214.0,
+        376.0
+      ],
+      "chest_xyxy": [
+        27.0,
+        65.0,
+        189.0,
+        312.0
+      ],
+      "status": "with_work_badge",
+      "is_wearing_badge": true,
+      "badge_detections": [
+        {
+          "label": "employee badge work badge",
+          "confidence": 0.3439,
+          "xyxy": [
+            105.0,
+            280.0,
+            136.0,
+            312.0
+          ]
+        },
+        {
+          "label": "employee badge work badge",
+          "confidence": 0.2694,
+          "xyxy": [
+            106.0,
+            280.0,
+            136.0,
+            312.0
+          ]
+        },
+        {
+          "label": "cardyard badge identification badge",
+          "confidence": 0.2163,
+          "xyxy": [
+            106.0,
+            280.0,
+            136.0,
+            312.0
+          ]
+        },
+        {
+          "label": "name tag card lanyard badge identification badge",
+          "confidence": 0.2643,
+          "xyxy": [
+            106.0,
+            280.0,
+            136.0,
+            312.0
+          ]
+        },
+        {
+          "label": "employee badge work badge",
+          "confidence": 0.2718,
+          "xyxy": [
+            102.0,
+            276.0,
+            139.0,
+            312.0
+          ]
+        },
+        {
+          "label": "employee badge work badge",
+          "confidence": 0.2357,
+          "xyxy": [
+            111.0,
+            289.0,
+            130.0,
+            311.0
+          ]
+        }
+      ]
+    },
+    {
+      "label": "person",
+      "confidence": 0.9014,
+      "person_xyxy": [
+        335.0,
+        0.0,
+        594.0,
+        367.0
+      ],
+      "chest_xyxy": [
+        366.0,
+        44.0,
+        563.0,
+        301.0
+      ],
+      "status": "with_work_badge",
+      "is_wearing_badge": true,
+      "badge_detections": [
+        {
+          "label": "employee badge work badge name tag badge",
+          "confidence": 0.313,
+          "xyxy": [
+            413.0,
+            236.0,
+            449.0,
+            275.0
+          ]
+        },
+        {
+          "label": "employee badge work badge card badge",
+          "confidence": 0.2517,
+          "xyxy": [
+            413.0,
+            237.0,
+            449.0,
+            274.0
+          ]
+        },
+        {
+          "label": "id card",
+          "confidence": 0.2403,
+          "xyxy": [
+            413.0,
+            237.0,
+            449.0,
+            274.0
+          ]
+        },
+        {
+          "label": "work badge",
+          "confidence": 0.193,
+          "xyxy": [
+            411.0,
+            234.0,
+            451.0,
+            276.0
+          ]
+        },
+        {
+          "label": "cardyard badge identification badge",
+          "confidence": 0.2046,
+          "xyxy": [
+            413.0,
+            237.0,
+            449.0,
+            274.0
+          ]
+        },
+        {
+          "label": "employee badge work badge name tag",
+          "confidence": 0.2488,
+          "xyxy": [
+            408.0,
+            231.0,
+            454.0,
+            279.0
+          ]
+        },
+        {
+          "label": "card",
+          "confidence": 0.2101,
+          "xyxy": [
+            410.0,
+            233.0,
+            452.0,
+            277.0
+          ]
+        }
+      ]
+    },
+    {
+      "label": "person",
+      "confidence": 0.6324,
+      "person_xyxy": [
+        183.0,
+        21.0,
+        379.0,
+        372.0
+      ],
+      "chest_xyxy": [
+        207.0,
+        63.0,
+        355.0,
+        309.0
+      ],
+      "status": "with_work_badge",
+      "is_wearing_badge": true,
+      "badge_detections": [
+        {
+          "label": "employee badge work badge name tag identification badge",
+          "confidence": 0.3443,
+          "xyxy": [
+            261.0,
+            264.0,
+            288.0,
+            303.0
+          ]
+        },
+        {
+          "label": "employee badge work badge identification badge",
+          "confidence": 0.2425,
+          "xyxy": [
+            261.0,
+            265.0,
+            287.0,
+            302.0
+          ]
+        },
+        {
+          "label": "employee badge work badge",
+          "confidence": 0.2554,
+          "xyxy": [
+            258.0,
+            262.0,
+            291.0,
+            304.0
+          ]
+        },
+        {
+          "label": "card badge",
+          "confidence": 0.1996,
+          "xyxy": [
+            261.0,
+            264.0,
+            288.0,
+            302.0
+          ]
+        },
+        {
+          "label": "work badge name",
+          "confidence": 0.1977,
+          "xyxy": [
+            255.0,
+            259.0,
+            294.0,
+            305.0
+          ]
+        },
+        {
+          "label": "name tag lanyard badge identification badge",
+          "confidence": 0.2373,
+          "xyxy": [
+            261.0,
+            264.0,
+            288.0,
+            303.0
+          ]
+        }
+      ]
+    }
+  ],
+  "detected": true,
+  "save_vis": true,
+  "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/work_badge/outputs",
+  "zero_shot_repo_id": "IDEA-Research/grounding-dino-tiny",
+  "result_file": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/work_badge/outputs/result.json"
+}

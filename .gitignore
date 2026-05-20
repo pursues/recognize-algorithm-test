@@ -4,3 +4,6 @@ vendor
 **/__pycache__/
 not_mask/vendor
 not_mask/models
+
+work_badge/models
+work_badge/wheels
