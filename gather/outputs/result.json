@@ -1,0 +1,334 @@
+[
+  {
+    "feature": "gather",
+    "display_name": "人员聚集识别模型",
+    "model": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/gather/yolov8n.pt",
+    "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/gather/imgs/gather1.png",
+    "expected_labels": [
+      "person"
+    ],
+    "people_count": 15,
+    "gather_groups_count": 1,
+    "has_gathering": true,
+    "detections": [
+      {
+        "label": "person",
+        "confidence": 0.698,
+        "xyxy": [
+          175.73,
+          244.83,
+          209.65,
+          321.53
+        ],
+        "track_id": null
+      },
+      {
+        "label": "person",
+        "confidence": 0.6647,
+        "xyxy": [
+          237.86,
+          240.75,
+          266.73,
+          317.08
+        ],
+        "track_id": null
+      },
+      {
+        "label": "person",
+        "confidence": 0.6236,
+        "xyxy": [
+          486.12,
+          192.55,
+          513.69,
+          253.1
+        ],
+        "track_id": null
+      },
+      {
+        "label": "person",
+        "confidence": 0.6133,
+        "xyxy": [
+          39.55,
+          221.01,
+          70.75,
+          297.03
+        ],
+        "track_id": null
+      },
+      {
+        "label": "person",
+        "confidence": 0.5611,
+        "xyxy": [
+          325.22,
+          237.03,
+          344.5,
+          301.0
+        ],
+        "track_id": null
+      },
+      {
+        "label": "person",
+        "confidence": 0.5298,
+        "xyxy": [
+          358.7,
+          181.95,
+          379.33,
+          238.85
+        ],
+        "track_id": null
+      },
+      {
+        "label": "person",
+        "confidence": 0.5098,
+        "xyxy": [
+          298.54,
+          224.6,
+          318.89,
+          288.18
+        ],
+        "track_id": null
+      },
+      {
+        "label": "person",
+        "confidence": 0.4947,
+        "xyxy": [
+          548.6,
+          190.4,
+          568.23,
+          249.82
+        ],
+        "track_id": null
+      },
+      {
+        "label": "person",
+        "confidence": 0.4762,
+        "xyxy": [
+          440.04,
+          176.98,
+          461.77,
+          240.07
+        ],
+        "track_id": null
+      },
+      {
+        "label": "person",
+        "confidence": 0.4495,
+        "xyxy": [
+          73.2,
+          79.2,
+          89.22,
+          126.1
+        ],
+        "track_id": null
+      },
+      {
+        "label": "person",
+        "confidence": 0.3999,
+        "xyxy": [
+          384.13,
+          182.46,
+          404.28,
+          244.78
+        ],
+        "track_id": null
+      },
+      {
+        "label": "person",
+        "confidence": 0.3812,
+        "xyxy": [
+          584.36,
+          149.01,
+          605.65,
+          202.61
+        ],
+        "track_id": null
+      },
+      {
+        "label": "person",
+        "confidence": 0.3714,
+        "xyxy": [
+          258.78,
+          142.25,
+          276.98,
+          191.23
+        ],
+        "track_id": null
+      },
+      {
+        "label": "person",
+        "confidence": 0.2728,
+        "xyxy": [
+          312.58,
+          161.04,
+          331.96,
+          216.65
+        ],
+        "track_id": null
+      },
+      {
+        "label": "person",
+        "confidence": 0.2704,
+        "xyxy": [
+          89.74,
+          48.01,
+          104.7,
+          83.65
+        ],
+        "track_id": null
+      }
+    ],
+    "gather_groups": [
+      {
+        "group_id": 1,
+        "people_count": 13,
+        "detections": [
+          {
+            "label": "person",
+            "confidence": 0.698,
+            "xyxy": [
+              175.73,
+              244.83,
+              209.65,
+              321.53
+            ],
+            "track_id": null
+          },
+          {
+            "label": "person",
+            "confidence": 0.6647,
+            "xyxy": [
+              237.86,
+              240.75,
+              266.73,
+              317.08
+            ],
+            "track_id": null
+          },
+          {
+            "label": "person",
+            "confidence": 0.6236,
+            "xyxy": [
+              486.12,
+              192.55,
+              513.69,
+              253.1
+            ],
+            "track_id": null
+          },
+          {
+            "label": "person",
+            "confidence": 0.6133,
+            "xyxy": [
+              39.55,
+              221.01,
+              70.75,
+              297.03
+            ],
+            "track_id": null
+          },
+          {
+            "label": "person",
+            "confidence": 0.5611,
+            "xyxy": [
+              325.22,
+              237.03,
+              344.5,
+              301.0
+            ],
+            "track_id": null
+          },
+          {
+            "label": "person",
+            "confidence": 0.5298,
+            "xyxy": [
+              358.7,
+              181.95,
+              379.33,
+              238.85
+            ],
+            "track_id": null
+          },
+          {
+            "label": "person",
+            "confidence": 0.5098,
+            "xyxy": [
+              298.54,
+              224.6,
+              318.89,
+              288.18
+            ],
+            "track_id": null
+          },
+          {
+            "label": "person",
+            "confidence": 0.4947,
+            "xyxy": [
+              548.6,
+              190.4,
+              568.23,
+              249.82
+            ],
+            "track_id": null
+          },
+          {
+            "label": "person",
+            "confidence": 0.4762,
+            "xyxy": [
+              440.04,
+              176.98,
+              461.77,
+              240.07
+            ],
+            "track_id": null
+          },
+          {
+            "label": "person",
+            "confidence": 0.3999,
+            "xyxy": [
+              384.13,
+              182.46,
+              404.28,
+              244.78
+            ],
+            "track_id": null
+          },
+          {
+            "label": "person",
+            "confidence": 0.3812,
+            "xyxy": [
+              584.36,
+              149.01,
+              605.65,
+              202.61
+            ],
+            "track_id": null
+          },
+          {
+            "label": "person",
+            "confidence": 0.3714,
+            "xyxy": [
+              258.78,
+              142.25,
+              276.98,
+              191.23
+            ],
+            "track_id": null
+          },
+          {
+            "label": "person",
+            "confidence": 0.2728,
+            "xyxy": [
+              312.58,
+              161.04,
+              331.96,
+              216.65
+            ],
+            "track_id": null
+          }
+        ]
+      }
+    ],
+    "save_vis": true,
+    "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/gather/outputs"
+  }
+]
