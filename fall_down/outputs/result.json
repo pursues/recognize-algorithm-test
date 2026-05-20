@@ -1,0 +1,126 @@
+[
+  {
+    "feature": "fall_down",
+    "display_name": "摔倒识别模型",
+    "model": "yolov8n.pt",
+    "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/fall_down/imgs/fall_down1.png",
+    "detections": [
+      {
+        "label": "fall",
+        "confidence": 0.9193,
+        "xyxy": [
+          291.24,
+          127.22,
+          434.84,
+          255.52
+        ],
+        "is_fall": true
+      },
+      {
+        "label": "person",
+        "confidence": 0.8885,
+        "xyxy": [
+          144.65,
+          276.71,
+          221.62,
+          454.49
+        ],
+        "is_fall": false
+      },
+      {
+        "label": "person",
+        "confidence": 0.8631,
+        "xyxy": [
+          32.24,
+          198.96,
+          110.05,
+          360.88
+        ],
+        "is_fall": false
+      },
+      {
+        "label": "person",
+        "confidence": 0.824,
+        "xyxy": [
+          582.86,
+          218.39,
+          663.9,
+          390.05
+        ],
+        "is_fall": false
+      }
+    ],
+    "fall_detected": true,
+    "save_vis": true,
+    "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/fall_down/outputs",
+    "vis_path": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/fall_down/outputs/fall_down1.png"
+  },
+  {
+    "feature": "fall_down",
+    "display_name": "摔倒识别模型",
+    "model": "yolov8n.pt",
+    "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/fall_down/imgs/fall_down2.png",
+    "detections": [
+      {
+        "label": "person",
+        "confidence": 0.9055,
+        "xyxy": [
+          35.04,
+          20.2,
+          72.0,
+          127.87
+        ],
+        "is_fall": false
+      },
+      {
+        "label": "person",
+        "confidence": 0.8887,
+        "xyxy": [
+          159.78,
+          62.42,
+          218.39,
+          158.67
+        ],
+        "is_fall": false
+      },
+      {
+        "label": "fall",
+        "confidence": 0.7525,
+        "xyxy": [
+          166.69,
+          105.36,
+          235.99,
+          172.94
+        ],
+        "is_fall": true
+      }
+    ],
+    "fall_detected": true,
+    "save_vis": true,
+    "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/fall_down/outputs",
+    "vis_path": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/fall_down/outputs/fall_down2.png"
+  },
+  {
+    "feature": "fall_down",
+    "display_name": "摔倒识别模型",
+    "model": "yolov8n.pt",
+    "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/fall_down/imgs/no_fall_down.png",
+    "detections": [
+      {
+        "label": "person",
+        "confidence": 0.8713,
+        "xyxy": [
+          82.47,
+          19.81,
+          272.97,
+          366.88
+        ],
+        "is_fall": false
+      }
+    ],
+    "fall_detected": false,
+    "save_vis": true,
+    "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/fall_down/outputs",
+    "vis_path": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/fall_down/outputs/no_fall_down.png"
+  }
+]
