@@ -1,0 +1,37 @@
+{
+  "feature": "fireSmoke",
+  "display_name": "火灾烟雾识别模型",
+  "model": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/fireSmoke/best.pt",
+  "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/fireSmoke/imgs/smoke.png",
+  "expected_labels": [
+    "Fire",
+    "smoke"
+  ],
+  "detections": [
+    {
+      "label": "smoke",
+      "confidence": 0.4667,
+      "xyxy": [
+        27.81,
+        0.0,
+        591.0,
+        350.8
+      ]
+    }
+  ],
+  "firesmoke_detections": [
+    {
+      "label": "smoke",
+      "confidence": 0.4667,
+      "xyxy": [
+        27.81,
+        0.0,
+        591.0,
+        350.8
+      ]
+    }
+  ],
+  "detected": true,
+  "save_vis": true,
+  "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/fireSmoke/outputs"
+}
