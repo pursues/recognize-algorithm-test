@@ -8,15 +8,31 @@ from typing import Any
 from typing import Iterable
 from typing import Sequence
 import sys
+import zipfile
 
 WORK_BADGE_DIR = Path(__file__).resolve().parent
+_LIBS_DIR = WORK_BADGE_DIR / "libs"
+_WHEELS_DIR = WORK_BADGE_DIR / "wheels"
+
+if not _LIBS_DIR.exists() and _WHEELS_DIR.exists():
+    _LIBS_DIR.mkdir(parents=True, exist_ok=True)
+    for whl in _WHEELS_DIR.glob("*.whl"):
+        if "numpy" in whl.name.lower() or "opencv" in whl.name.lower() or "cv2" in whl.name.lower():
+            continue  # 跳过底层 C 库，直接使用 Jetson 宿主机自带的
+        try:
+            with zipfile.ZipFile(whl, 'r') as zip_ref:
+                zip_ref.extractall(_LIBS_DIR)
+        except Exception as e:
+            print(f"Warning: Failed to extract {whl.name}: {e}")
+
+if _LIBS_DIR.exists():
+    sys.path.insert(0, str(_LIBS_DIR))
 
 try:
     import cv2
 except ImportError:  # pragma: no cover - depends on local environment
     cv2 = None
 
-from huggingface_hub import snapshot_download
 import torch
 from PIL import Image
 from transformers import AutoModelForZeroShotObjectDetection

@@ -138,16 +138,12 @@ python3 work_badge_test.py \
 
 ### 边缘设备（离线/Jetson）部署说明
 
-由于不同操作系统的文件编码和 Python C 扩展（如 `tokenizers`）在跨平台直接拷贝解压时极易损坏（例如出现 `UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb0`），**强烈建议不要直接使用拷贝的 `libs` 文件夹运行**。
+我们为你提供了 **零安装 (Zero-Install)** 的免折腾体验。你只需要将代码和 `wheels` 文件夹拷贝到 Jetson 边缘盒子中，即可直接运行，无需再敲任何 `pip install` 命令！
 
-我们已为你准备好了离线安装包（`.whl`），你只需在盒子上执行**一条离线安装命令**即可：
-
-1. 将整个 `work_badge` 目录拷贝到 Jetson。
-2. 在 Jetson 上进入 `work_badge` 目录并执行：
-   ```bash
-   pip3 install --no-index --find-links=wheels transformers huggingface_hub
-   ```
-3. 安装完成后，即可直接运行（即使没有网络也可以）：
+1. 将最新的 `work_badge` 目录（请确保包含 `wheels` 文件夹以及最新修改的 `*.py` 文件）拷贝到 Jetson。
+2. 直接运行测试脚本（即使没有网络也可以）：
    ```bash
    python3 work_badge_test.py --image imgs/badge.png
    ```
+
+**原理解释**：代码运行时，如果检测到本地尚未安装 `transformers` 库，会自动从 `wheels` 文件夹中解压出对应 ARM64 架构的离线安装包（`.whl` 是标准的 ZIP 文件）到临时的 `libs` 目录中，并直接在内存中加载，彻底绕过了容易报错的 `pip` 校验和安装流程。

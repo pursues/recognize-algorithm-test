@@ -334,14 +334,23 @@ class GatherDetector:
             raise ValueError(f"无法读取图片: {image_path}")
 
         # 使用 ByteTrack 进行跟踪，或者仅仅使用 predict 进行检测
+        results = None
         if use_tracking:
-            results = self.model.track(
-                source=frame,
-                persist=True,
-                tracker="bytetrack.yaml",
-                verbose=False,
-            )
-        else:
+            try:
+                results = self.model.track(
+                    source=frame,
+                    persist=True,
+                    tracker="bytetrack.yaml",
+                    verbose=False,
+                )
+            except (ImportError, ModuleNotFoundError) as e:
+                if "lap" in str(e).lower() or "lap" in repr(e).lower():
+                    print("警告: 缺少 'lap' 库，无法使用目标跟踪功能。已自动降级为单帧检测。")
+                    use_tracking = False
+                else:
+                    raise
+
+        if not use_tracking or results is None:
             results = self.model.predict(
                 source=frame,
                 verbose=False,
@@ -373,7 +382,7 @@ class GatherDetector:
         quit_key: str = "q",
         warmup_frames: int = 5,
         max_failed_reads: int = 30,
-        use_tracking: bool = True,
+        use_tracking: bool = False,
     ) -> None:
         _require_cv2()
         cap = open_camera(
@@ -413,16 +422,26 @@ class GatherDetector:
 
                 frame_count += 1
                 
+                results = None
                 if use_tracking:
-                    results = self.model.track(
-                        source=frame,
-                        persist=True,
-                        tracker="bytetrack.yaml",
-                        conf=self.model.overrides["conf"] if conf is None else conf,
-                        iou=self.model.overrides["iou"] if iou is None else iou,
-                        verbose=False,
-                    )
-                else:
+                    try:
+                        results = self.model.track(
+                            source=frame,
+                            persist=True,
+                            tracker="bytetrack.yaml",
+                            conf=self.model.overrides["conf"] if conf is None else conf,
+                            iou=self.model.overrides["iou"] if iou is None else iou,
+                            verbose=False,
+                        )
+                    except (ImportError, ModuleNotFoundError) as e:
+                        if "lap" in str(e).lower() or "lap" in repr(e).lower():
+                            if frame_count == 1:
+                                print("警告: 缺少 'lap' 库，无法使用目标跟踪功能。已自动降级为单帧检测。")
+                            use_tracking = False
+                        else:
+                            raise
+
+                if not use_tracking or results is None:
                     results = self.model.predict(
                         source=frame,
                         conf=self.model.overrides["conf"] if conf is None else conf,

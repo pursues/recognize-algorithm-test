@@ -31,8 +31,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--warmup-frames", type=int, default=5, help="摄像头预热读取帧数")
     parser.add_argument("--max-failed-reads", type=int, default=30, help="连续读帧失败多少次后终止")
     parser.add_argument("--window-name", default="Gather Detection", help="实时识别窗口标题")
-    parser.add_argument("--use-tracking", action="store_true", help="启用 ByteTrack 跟踪算法（默认在摄像头模式下启用）")
-    parser.add_argument("--no-tracking", action="store_true", help="禁用 ByteTrack 跟踪算法")
+    parser.add_argument("--use-tracking", action="store_true", help="尝试启用 ByteTrack 跟踪算法（如果环境不支持会自动降级）")
+    parser.add_argument("--no-tracking", action="store_true", help="禁用 ByteTrack 跟踪算法（默认禁用以保证兼容性）")
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -60,9 +60,9 @@ def main() -> None:
     )
 
     if args.camera:
-        use_tracking = True
-        if args.no_tracking:
-            use_tracking = False
+        use_tracking = False
+        if args.use_tracking:
+            use_tracking = True
             
         detector.run_camera_inference(
             camera=args.camera,

@@ -47,19 +47,19 @@ python gather-test.py --image imgs/test.jpg
 python gather-test.py --distance-threshold 100 --min-gather-count 4
 ```
 
-### 摄像头实时识别 (支持 ByteTrack 跟踪)
+### 摄像头实时识别
 
-默认情况下，摄像头模式会自动开启 ByteTrack 跟踪算法，以实现更稳定的人员聚集判断。
+默认情况下，为保证在 Jetson 等边缘设备上的兼容性（避免编译 `lap` C++ 依赖），目标跟踪功能是**默认关闭**的，只使用单帧检测来判断聚集。
 
 ```bash
 # 使用 USB 摄像头 (如电脑自带摄像头)
 python gather-test.py --camera usb
 
-# 使用数字序号
-python gather-test.py --camera 0
-
 # 使用 CSI 摄像头 (Jetson 等边缘设备)
 python gather-test.py --camera csi
+
+# 尝试开启目标跟踪（需环境中已安装 lap）
+python gather-test.py --camera csi --use-tracking
 ```
 
 ### 常用参数说明
@@ -68,9 +68,12 @@ python gather-test.py --camera csi
 - `--conf`: 目标检测置信度阈值。
 - `--distance-threshold`: 判定两人属于同一群体的最大像素距离，默认 `150.0`。
 - `--min-gather-count`: 判定为“聚集”的最少人数，默认 `3`。
-- `--use-tracking` / `--no-tracking`: 显式开启或关闭 ByteTrack 跟踪。
+- `--use-tracking`: 尝试开启 ByteTrack 跟踪（若缺少依赖会自动降级）。
 - `--camera`: 摄像头来源，支持 `usb`, `csi`, 或 `0`、`1` 等数字序号。
 
-## 5. 关于 ByteTrack
+## 5. 关于 ByteTrack 依赖 (`lap` 库)
 
-[ByteTrack](https://github.com/FoundationVision/ByteTrack) 是一种简单高效的多目标跟踪算法，通过关联几乎每个检测框而不是仅仅关联高分检测框来跟踪对象。在本模块中，我们无需额外安装原版的 ByteTrack 仓库代码，因为 `ultralytics` (YOLOv8) 已经内置了对 `bytetrack.yaml` 的原生支持。在摄像头流处理中调用 `model.track(..., tracker="bytetrack.yaml")` 即可无缝实现极高帧率的跟踪及聚集检测。
+[ByteTrack](https://github.com/FoundationVision/ByteTrack) 是一种简单高效的多目标跟踪算法。虽然 `ultralytics` 内部集成了 ByteTrack 算法逻辑，但它底层依赖于 `lap` 库来进行线性分配计算（Linear Assignment）。
+在 Jetson 等边缘设备上安装 `lap` 库需要 C++ 编译环境，为了达到“零额外下载/零编译”的目标，代码中已经做好了**自动降级**处理：
+1. 默认情况下，摄像头推理不开启 `--use-tracking`，直接使用原生的 `predict`。
+2. 即使手动加上 `--use-tracking`，如果在运行时捕获到 `ModuleNotFoundError: No module named 'lap'`，代码会自动打印警告并平滑降级到单帧检测，保证程序不会崩溃。
