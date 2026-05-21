@@ -8,25 +8,8 @@ from typing import Any
 from typing import Iterable
 from typing import Sequence
 import sys
-import zipfile
 
 WORK_BADGE_DIR = Path(__file__).resolve().parent
-_LIBS_DIR = WORK_BADGE_DIR / "libs"
-_WHEELS_DIR = WORK_BADGE_DIR / "wheels"
-
-if not _LIBS_DIR.exists() and _WHEELS_DIR.exists():
-    _LIBS_DIR.mkdir(parents=True, exist_ok=True)
-    for whl in _WHEELS_DIR.glob("*.whl"):
-        if "numpy" in whl.name.lower() or "opencv" in whl.name.lower() or "cv2" in whl.name.lower():
-            continue  # 跳过底层 C 库，直接使用 Jetson 宿主机自带的
-        try:
-            with zipfile.ZipFile(whl, 'r') as zip_ref:
-                zip_ref.extractall(_LIBS_DIR)
-        except Exception as e:
-            print(f"Warning: Failed to extract {whl.name}: {e}")
-
-if _LIBS_DIR.exists():
-    sys.path.insert(0, str(_LIBS_DIR))
 
 try:
     import cv2
@@ -552,6 +535,7 @@ class WorkBadgeDetector:
         quit_key: str = "q",
         warmup_frames: int = 5,
         max_failed_reads: int = 30,
+        process_every_n_frames: int = 5,  # 新增跳帧参数：每隔几帧推理一次
     ) -> None:
         _require_cv2()
         cap = open_camera(
@@ -564,9 +548,11 @@ class WorkBadgeDetector:
         if not cap.isOpened():
             raise RuntimeError(f"无法打开摄像头: {camera}")
 
-        print(f"实时识别已启动，摄像头={camera}，按 '{quit_key.upper()}' 退出。")
+        print(f"实时识别已启动，摄像头={camera}，每 {process_every_n_frames} 帧推理一次，按 '{quit_key.upper()}' 退出。")
         frame_count = 0
         failed_reads = 0
+        last_prediction = None  # 缓存上一帧的推理结果
+        last_annotated_frame = None
 
         try:
             for _ in range(max(warmup_frames, 0)):
@@ -588,12 +574,19 @@ class WorkBadgeDetector:
                 failed_reads = 0
 
                 frame_count += 1
-                prediction = self.predict_frame(frame, frame_name=f"camera:{camera}")
-                annotated_frame = _annotate_image(frame.copy(), prediction)
+                
+                # 核心跳帧逻辑：减少对 GPU 的瞬时过载
+                if frame_count % process_every_n_frames == 1 or last_prediction is None:
+                    last_prediction = self.predict_frame(frame, frame_name=f"camera:{camera}")
+                    last_annotated_frame = _annotate_image(frame.copy(), last_prediction)
+                else:
+                    # 对于跳过的帧，直接复用上一次的检测框来绘制，或者只绘制原图
+                    # 考虑到流畅性，我们依然可以把上次的框画在当前帧上
+                    last_annotated_frame = _annotate_image(frame.copy(), last_prediction)
 
                 if frame_log_interval > 0 and frame_count % frame_log_interval == 0:
-                    if prediction.detections:
-                        for detection in prediction.detections:
+                    if last_prediction.detections:
+                        for detection in last_prediction.detections:
                             print(
                                 f"[DETECT] {detection.status} person: {detection.confidence:.2f}, "
                                 f"badge_count={len(detection.badge_detections)}"
@@ -601,7 +594,7 @@ class WorkBadgeDetector:
                     else:
                         print("[DETECT] No person detections in this frame.")
 
-                cv2.imshow(window_name, annotated_frame)
+                cv2.imshow(window_name, last_annotated_frame)
                 if cv2.waitKey(1) & 0xFF == ord(quit_key.lower()):
                     break
         finally:

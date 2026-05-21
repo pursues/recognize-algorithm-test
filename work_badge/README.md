@@ -32,6 +32,30 @@ work_badge/
 3. 使用本地 `Grounding DINO` 零样本模型在 ROI 内找 `employee badge / work badge / name tag / id card / lanyard badge`
 4. 结合几何约束做误检过滤，输出 `with_work_badge` / `without_work_badge`
 
+
+## 问题
+
+目前在开源社区（如 Hugging Face 或 GitHub）中，并没有一个专门针对“工作牌（Work Badge / ID Card）”训练好的、开箱即用的轻量级 YOLO 模型权重。
+
+当前的实现方案它是一个**“零样本（Zero-Shot）开放词汇”大模型**。
+
+- 它不需要提前见过你们公司的工牌。
+- 只要我们给它输入文本提示词（如 badge 、 name tag ），它就能通过理解语义去画面里找。
+- 缺点 ：它比 YOLO 重得多，运算量大，边缘盒子容易报 system throttled due to over current （过载降频），必须加上“跳帧推理”的逻辑。
+
+## 解决方案
+
+自己训练一个 YOLO 模型。
+
+只需要：
+1. 收集 100~200 张你们实际场景中佩戴工牌的照片。
+2. 框一下工牌的位置（打个标签）。
+3. 用 YOLOv8 训练出一个属于你们自己的 badge_best.pt 。
+一旦有了这个权重，你就可以完全抛弃沉重的 transformers 和 Grounding DINO ，直接用纯 YOLO 推理，速度极快（边缘盒子跑 30fps 毫无压力），且不再有任何功耗过载的问题。
+
+
+
+
 ## 本地模型与离线运行
 
 默认零样本模型路径：
@@ -138,12 +162,17 @@ python3 work_badge_test.py \
 
 ### 边缘设备（离线/Jetson）部署说明
 
-我们为你提供了 **零安装 (Zero-Install)** 的免折腾体验。你只需要将代码和 `wheels` 文件夹拷贝到 Jetson 边缘盒子中，即可直接运行，无需再敲任何 `pip install` 命令！
+当前代码被设计为纯净的本地权重加载模式，不包含任何复杂的依赖魔改。
+你只需确保盒子里安装了 `ultralytics`, `torch`, `transformers` 即可。
 
-1. 将最新的 `work_badge` 目录（请确保包含 `wheels` 文件夹以及最新修改的 `*.py` 文件）拷贝到 Jetson。
-2. 直接运行测试脚本（即使没有网络也可以）：
+如果盒子没有外网，建议提前在有网环境把相关库打包成 wheel 后在盒子里离线安装。
+
+1. 确保盒子中存在 `work_badge/models/grounding-dino-tiny` 权重目录。
+2. 确保盒子上已安装好依赖：
+   ```bash
+   pip3 install transformers
+   ```
+3. 直接运行测试脚本（即使没有网络也可以）：
    ```bash
    python3 work_badge_test.py --image imgs/badge.png
    ```
-
-**原理解释**：代码运行时，如果检测到本地尚未安装 `transformers` 库，会自动从 `wheels` 文件夹中解压出对应 ARM64 架构的离线安装包（`.whl` 是标准的 ZIP 文件）到临时的 `libs` 目录中，并直接在内存中加载，彻底绕过了容易报错的 `pip` 校验和安装流程。

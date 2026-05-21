@@ -4,25 +4,8 @@ import argparse
 import json
 import sys
 from pathlib import Path
-import zipfile
 
 WORK_BADGE_DIR = Path(__file__).resolve().parent
-_LIBS_DIR = WORK_BADGE_DIR / "libs"
-_WHEELS_DIR = WORK_BADGE_DIR / "wheels"
-
-if not _LIBS_DIR.exists() and _WHEELS_DIR.exists():
-    _LIBS_DIR.mkdir(parents=True, exist_ok=True)
-    for whl in _WHEELS_DIR.glob("*.whl"):
-        if "numpy" in whl.name.lower() or "opencv" in whl.name.lower() or "cv2" in whl.name.lower():
-            continue  # 跳过底层 C 库，直接使用 Jetson 宿主机自带的
-        try:
-            with zipfile.ZipFile(whl, 'r') as zip_ref:
-                zip_ref.extractall(_LIBS_DIR)
-        except Exception as e:
-            print(f"Warning: Failed to extract {whl.name}: {e}")
-
-if _LIBS_DIR.exists():
-    sys.path.insert(0, str(_LIBS_DIR))
 
 from work_badge import DEFAULT_BOX_THRESHOLD
 from work_badge import DEFAULT_CONF
@@ -101,6 +84,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--flip-method", type=int, default=0, help="CSI 摄像头翻转方式")
     parser.add_argument("--warmup-frames", type=int, default=5, help="摄像头预热读取帧数")
     parser.add_argument("--max-failed-reads", type=int, default=30, help="连续读帧失败多少次后终止")
+    parser.add_argument("--process-every-n-frames", type=int, default=5, help="跳帧推理：每隔 N 帧推理一次，减轻 Jetson 功耗压力，防止 over-current")
     parser.add_argument("--window-name", default="Work Badge Detection", help="实时识别窗口标题")
     parser.add_argument(
         "--prepare-only",
@@ -149,9 +133,28 @@ def _prediction_to_dict(prediction, save_vis: bool, output_dir: Path) -> dict:
 
 def main() -> None:
     args = build_parser().parse_args()
-    person_model_path = args.person_model.resolve()
+    # 检查并修复人员检测模型路径
+    person_model_path = Path(args.person_model)
     if not person_model_path.exists():
-        raise FileNotFoundError(f"人员检测权重不存在: {person_model_path}")
+        # 如果默认上一级的路径不存在，尝试在当前目录和上一级目录中查找常用的 yolo 模型
+        fallback_paths = [
+            WORK_BADGE_DIR.parent / "yolov8n.pt",
+            WORK_BADGE_DIR / "yolov8n.pt",
+            WORK_BADGE_DIR.parent / "yolo11n.pt",
+            WORK_BADGE_DIR / "yolo11n.pt"
+        ]
+        found = False
+        for fallback in fallback_paths:
+            if fallback.exists():
+                person_model_path = fallback
+                found = True
+                print(f"提示: 未在 {args.person_model} 找到模型，自动回退使用 {fallback}")
+                break
+        
+        if not found:
+            raise FileNotFoundError(f"人员检测权重不存在: {args.person_model}。请确保模型已放置在当前或上一级目录，或使用 --person-model 参数显式指定路径。")
+
+    print(f"使用人员检测模型: {person_model_path}")
 
     zero_shot_model_path = Path(args.zero_shot_model).resolve()
     local_model_dir = ensure_local_zero_shot_model(
@@ -198,6 +201,7 @@ def main() -> None:
             flip_method=args.flip_method,
             warmup_frames=args.warmup_frames,
             max_failed_reads=args.max_failed_reads,
+            process_every_n_frames=args.process_every_n_frames,
         )
         return
 
