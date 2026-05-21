@@ -134,13 +134,18 @@ def _load_image(image_path: Path):
 def _build_face_detector():
     if cv2 is None:
         return None
-    cascade_path = Path(cv2.data.haarcascades) / "haarcascade_frontalface_default.xml"
-    if not cascade_path.exists():
-        return None
-    cascade = cv2.CascadeClassifier(str(cascade_path))
-    if cascade.empty():
-        return None
-    return cascade
+    yunet_path = MODELS_DIR / "face_detection_yunet_2023mar.onnx"
+    if not yunet_path.exists():
+        # 回退到 Haar 级联作为备用方案
+        cascade_path = Path(cv2.data.haarcascades) / "haarcascade_frontalface_default.xml"
+        if not cascade_path.exists():
+            return None
+        cascade = cv2.CascadeClassifier(str(cascade_path))
+        if cascade.empty():
+            return None
+        return cascade
+    # 使用 YuNet 预训练模型，精度和速度均远超 Haar
+    return cv2.FaceDetectorYN.create(str(yunet_path), "", (320, 320))
 
 
 def build_csi_gstreamer_pipeline(
@@ -189,15 +194,32 @@ def _detect_faces(face_detector: Any, image: Any, min_face_size: int) -> list[li
     if face_detector is None or cv2 is None:
         return []
 
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    gray = cv2.equalizeHist(gray)
-    faces = face_detector.detectMultiScale(
-        gray,
-        scaleFactor=1.1,
-        minNeighbors=5,
-        minSize=(min_face_size, min_face_size),
-    )
-    return [[float(x), float(y), float(x + w), float(y + h)] for x, y, w, h in faces]
+    if hasattr(face_detector, "setInputSize"):
+        # YuNet 检测
+        height, width = image.shape[:2]
+        face_detector.setInputSize((width, height))
+        _, faces = face_detector.detect(image)
+        if faces is None:
+            return []
+        detected_boxes = []
+        for face in faces:
+            # face: [x, y, w, h, ...]
+            x, y, w, h = face[:4]
+            score = face[-1]
+            if w >= min_face_size and h >= min_face_size and score >= 0.6:
+                detected_boxes.append([float(x), float(y), float(x + w), float(y + h)])
+        return detected_boxes
+    else:
+        # Haar 级联检测 (备用)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        gray = cv2.equalizeHist(gray)
+        faces = face_detector.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(min_face_size, min_face_size),
+        )
+        return [[float(x), float(y), float(x + w), float(y + h)] for x, y, w, h in faces]
 
 
 def _expand_box(box: Sequence[float], width: int, height: int, padding_ratio: float) -> list[int]:
@@ -494,6 +516,7 @@ class NotMaskDetector:
         quit_key: str = "q",
         warmup_frames: int = 5,
         max_failed_reads: int = 30,
+        process_every_n_frames: int = 5,  # 新增跳帧参数：每隔几帧推理一次
     ) -> None:
         _require_cv2()
         cap = open_camera(
@@ -506,9 +529,11 @@ class NotMaskDetector:
         if not cap.isOpened():
             raise RuntimeError(f"无法打开摄像头: {camera}")
 
-        print(f"实时识别已启动，摄像头={camera}，按 '{quit_key.upper()}' 退出。")
+        print(f"实时识别已启动，摄像头={camera}，每 {process_every_n_frames} 帧推理一次，按 '{quit_key.upper()}' 退出。")
         frame_count = 0
         failed_reads = 0
+        last_prediction = None  # 缓存上一帧的推理结果
+        last_annotated_frame = None
 
         try:
             for _ in range(max(warmup_frames, 0)):
@@ -532,14 +557,21 @@ class NotMaskDetector:
                 failed_reads = 0
 
                 frame_count += 1
-                prediction = self.predict_frame(
-                    frame,
-                    frame_name=f"camera:{camera}",
-                )
+                
+                # 核心跳帧逻辑：减少对 GPU/CPU 的瞬时过载
+                if frame_count % process_every_n_frames == 1 or last_prediction is None:
+                    last_prediction = self.predict_frame(
+                        frame,
+                        frame_name=f"camera:{camera}",
+                    )
+                    last_annotated_frame = _annotate_image(frame.copy(), last_prediction)
+                else:
+                    # 对于跳过的帧，把上次的框画在当前帧上
+                    last_annotated_frame = _annotate_image(frame.copy(), last_prediction)
 
                 if frame_log_interval > 0 and frame_count % frame_log_interval == 0:
-                    if prediction.face_detections:
-                        for detection in prediction.face_detections:
+                    if last_prediction.face_detections:
+                        for detection in last_prediction.face_detections:
                             status = "NO_MASK" if detection.is_no_mask else "MASK"
                             print(
                                 f"[DETECT] {status} {detection.label}: {detection.confidence:.2f}"
@@ -547,8 +579,7 @@ class NotMaskDetector:
                     else:
                         print("[DETECT] No faces in this frame.")
 
-                annotated_frame = _annotate_image(frame.copy(), prediction)
-                cv2.imshow(window_name, annotated_frame)
+                cv2.imshow(window_name, last_annotated_frame)
 
                 if cv2.waitKey(1) & 0xFF == ord(quit_key.lower()):
                     break

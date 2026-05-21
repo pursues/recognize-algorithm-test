@@ -57,6 +57,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--flip-method", type=int, default=0, help="CSI 摄像头翻转方式")
     parser.add_argument("--warmup-frames", type=int, default=5, help="摄像头预热读取帧数")
     parser.add_argument("--max-failed-reads", type=int, default=30, help="连续读帧失败多少次后终止")
+    parser.add_argument("--process-every-n-frames", type=int, default=5, help="实时摄像头跳帧数（每几帧推理一次）")
     parser.add_argument("--window-name", default="Not Mask Detection", help="实时识别窗口标题")
     parser.add_argument(
         "--output-dir",
@@ -118,6 +119,7 @@ def main() -> None:
             flip_method=args.flip_method,
             warmup_frames=args.warmup_frames,
             max_failed_reads=args.max_failed_reads,
+            process_every_n_frames=args.process_every_n_frames,
         )
         return
 

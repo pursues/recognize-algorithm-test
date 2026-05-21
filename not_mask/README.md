@@ -4,7 +4,7 @@
 
 当前实现采用“两阶段”方案：
 
-- 第 1 步：使用 OpenCV 自带的人脸检测器找到人脸区域
+- 第 1 步：使用 OpenCV 深度学习人脸检测器 (YuNet) 找到人脸区域（比传统 Haar 级联更准更快）。
 - 第 2 步：把每张人脸裁剪后送入当前目录下的本地口罩分类模型，判断是 `WithoutMask` / `WithMask`，或兼容 `Face_Mask Not_Found` / `Face_Mask Found`
 
 这样做的目标是尽量复用开源现成权重，快速落地一个可运行的未戴口罩识别模块。
@@ -17,7 +17,8 @@ not_mask/
 │   ├── mask.png
 │   └── not-mask-leijun.jpg
 ├── models/
-│   └── face-mask-detection/ # 本地预训练模型目录
+│   ├── face-mask-detection/ # 本地预训练模型目录
+│   └── face_detection_yunet_2023mar.onnx # YuNet 预训练人脸检测模型
 ├── outputs/                # 运行后自动生成，可按需删除
 ├── not_mask.py             # 未戴口罩识别核心模块
 ├── not_mask_test.py        # 命令行测试入口
@@ -109,11 +110,14 @@ python3.11 not_mask_test.py --camera 0
 
 ```bash
 python3.11 not_mask_test.py --camera csi --width 1280 --height 720 --framerate 30
-python3.11 not_mask_test.py --camera usb --frame-log-interval 10
+python3.11 not_mask_test.py --camera usb --frame-log-interval 10 --process-every-n-frames 5
 python3.11 not_mask_test.py --camera csi --warmup-frames 15 --max-failed-reads 100
 ```
 
-## 轻量化说明
+## 性能优化说明
+
+- **人脸检测升级**：使用 `YuNet` 深度学习模型替代了原本的 `haarcascade`。`YuNet` 检测率极高，漏检少，且针对 CPU 进行了极度优化，速度和精度均大幅提升。
+- **实时推理跳帧**：在摄像头实时检测模式下，默认引入了 `--process-every-n-frames 5` 机制。由于每帧都使用 Swin Transformer 分类会导致严重卡顿，跳帧逻辑只在特定帧进行推理，其它帧复用推理结果绘制，保证了视频流的丝滑流畅。
 
 - 当前目录已经去掉 `.hf-cache/` 方案，模型改为本地 `models/face-mask-detection`
 - 模型目录只保留推理必需文件
