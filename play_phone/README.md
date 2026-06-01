@@ -70,7 +70,9 @@ python3.11 play_phone/play_phone_test.py --camera usb
 ### 6. CSI 摄像头实时识别
 
 ```bash
-python3.11 play_phone/play_phone_test.py --camera csi
+python3 play_phone/play_phone_test.py --camera csi
+
+python3 play_phone/play_phone_test.py --camera csi --infer-every-n-frames 60
 ```
 
 默认已经设置为每 `30` 帧跑一次模型推理。
