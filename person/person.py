@@ -85,6 +85,7 @@ __all__ = [
     "OUTPUTS_DIR",
     "TEST_IMAGES_DIR",
     "build_csi_gstreamer_pipeline",
+    "build_hk_gstreamer_pipeline",
     "open_camera",
     "send_alert",
 ]
@@ -128,6 +129,22 @@ def build_csi_gstreamer_pipeline(
     )
 
 
+def build_hk_gstreamer_pipeline(
+    rtsp_url: str = "rtsp://admin:JIANGhd99110@192.168.5.113:554/Streaming/Channels/101",
+    latency: int = 200,
+) -> str:
+    return (
+        f"rtspsrc location={rtsp_url} latency={latency} protocols=tcp ! "
+        "rtph265depay ! h265parse ! "
+        "nvv4l2decoder ! "
+        "nvvidconv ! "
+        "video/x-raw,format=BGRx ! "
+        "videoconvert ! "
+        "video/x-raw,format=BGR ! "
+        "appsink drop=1 max-buffers=2"
+    )
+
+
 def open_camera(
     camera: str | int = "usb",
     width: int = 1280,
@@ -146,11 +163,26 @@ def open_camera(
             flip_method=flip_method,
         )
         return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
+    if camera == "hk":
+        rtsp_url = os.environ.get(
+            "HK_RTSP_URL",
+            "rtsp://admin:JIANGhd99110@192.168.5.113:554/Streaming/Channels/101"
+        )
+        gst_str = build_hk_gstreamer_pipeline(rtsp_url=rtsp_url)
+        cap = cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
+        for _ in range(5):
+            if cap.isOpened():
+                break
+            cap.release()
+            import time
+            time.sleep(2)
+            cap = cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
+        return cap
     if camera == "usb":
         return cv2.VideoCapture(0, cv2.CAP_ANY)
-    if camera.isdigit():
+    if isinstance(camera, str) and camera.isdigit():
         return cv2.VideoCapture(int(camera))
-    raise ValueError(f"不支持的摄像头类型: {camera}，可选值为 csi、usb 或数字序号")
+    raise ValueError(f"不支持的摄像头类型: {camera}，可选值为 csi、usb、hk 或数字序号")
 
 
 class AlertClient:
@@ -271,6 +303,13 @@ def send_alert(detection_count: int, image_path: str = "", frame_info: dict | No
             except Exception as e:
                 print(f"[OSS] 上传失败: {e}")
                 oss_url = ""
+            finally:
+                if frame is not None and frame_info:
+                    try:
+                        Path(upload_image_path).unlink()
+                        print(f"[ALERT] 已清理临时图片: {upload_image_path}")
+                    except Exception as e:
+                        print(f"[ALERT] 清理临时图片失败: {e}")
         
         raw_data = f"confidence\":\"0.93\",\"cameraPoint\":\"{camera_location}"
         
