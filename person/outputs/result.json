@@ -19,23 +19,9 @@
           857.02,
           749.82
         ],
-        "track_id": null
+        "track_id": 1
       }
     ],
-    "save_vis": true,
-    "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/person/outputs"
-  },
-  {
-    "feature": "person",
-    "display_name": "人员识别模型",
-    "model": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/person/yolov8n.pt",
-    "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/person/imgs/no_person.png",
-    "expected_labels": [
-      "person"
-    ],
-    "person_count": 0,
-    "has_person": false,
-    "detections": [],
     "save_vis": true,
     "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/person/outputs"
   }

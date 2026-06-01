@@ -21,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--conf", type=float, help="置信度阈值")
     parser.add_argument("--iou", type=float, help="NMS IoU 阈值")
-    parser.add_argument("--frame-log-interval", type=int, default=10, help="每隔多少帧打印一次检测结果")
+    parser.add_argument("--frame-log-interval", type=int, default=30, help="每隔多少帧打印一次检测结果")
     parser.add_argument("--width", type=int, default=1280, help="CSI 摄像头宽度")
     parser.add_argument("--height", type=int, default=720, help="CSI 摄像头高度")
     parser.add_argument("--framerate", type=int, default=30, help="CSI 摄像头帧率")

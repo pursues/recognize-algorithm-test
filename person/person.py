@@ -3,12 +3,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 from pathlib import Path
+import sys
 from typing import Any
+import threading
+import datetime
 
 PERSON_DIR = Path(__file__).resolve().parent
+LIBS_DIR = PERSON_DIR / "libs"
 TEST_IMAGES_DIR = PERSON_DIR / "imgs"
 OUTPUTS_DIR = PERSON_DIR / "outputs"
 YOLO_CONFIG_DIR = PERSON_DIR / ".ultralytics"
+
+if LIBS_DIR.exists():
+    sys.path.insert(0, str(LIBS_DIR))
 
 os.environ.setdefault("YOLO_CONFIG_DIR", str(YOLO_CONFIG_DIR))
 
@@ -146,41 +153,155 @@ def open_camera(
     raise ValueError(f"不支持的摄像头类型: {camera}，可选值为 csi、usb 或数字序号")
 
 
-def send_alert(detection_count: int, image_path: str = "", frame_info: dict | None = None) -> dict:
+class AlertClient:
+    def __init__(self):
+        self.endpoint = 'https://oss-rg-china-mainland.aliyuncs.com'
+        self.bucket_name = 'huitianfile'
+        self.access_key_id = os.environ.get('ALIYUN_ACCESS_KEY_ID', '')
+        self.access_key_secret = os.environ.get('ALIYUN_ACCESS_KEY_SECRET', '')
+        
+        import oss2
+        auth = oss2.Auth(self.access_key_id, self.access_key_secret)
+        self.bucket = oss2.Bucket(auth, self.endpoint, self.bucket_name)
+        
+        self.alarm_counter = 0
+        self.counter_lock = threading.Lock()
+        self.last_date = datetime.datetime.now().strftime("%Y%m%d")
+        
+        self.alert_api_url = "http://192.168.5.53:7250/api/openapi/behavior/alarms"
+        
+    def _generate_alarm_no(self) -> str:
+        current_date = datetime.datetime.now().strftime("%Y%m%d")
+        timestamp_ms = int(datetime.datetime.now().timestamp() * 1000)
+        return f"ALARM-{current_date}-{timestamp_ms}"
+    
+    def upload_to_oss(self, image_path: str | Path, object_name: str | None = None) -> str:
+        import oss2
+        image_path = Path(image_path)
+        
+        if object_name is None:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            object_name = f"person_alert/{timestamp}_{image_path.name}"
+        
+        result = self.bucket.put_object_from_file(object_name, str(image_path))
+        
+        if result.status == 200:
+            oss_url = f"https://{self.bucket_name}.{self.endpoint.replace('https://', '')}/{object_name}"
+            print(f"[OSS] 上传成功: {oss_url}")
+            return oss_url
+        else:
+            raise RuntimeError(f"OSS 上传失败，状态码: {result.status}")
+    
+    def send_alert_request(self, alarm_data: dict) -> dict:
+        import requests
+        try:
+            headers = {
+                "Content-Type": "application/json",
+                "appKey": "PdvudIo0fEacM8Pls88U9fsDjMwhqQMh"
+            }
+            response = requests.post(
+                self.alert_api_url,
+                json=alarm_data,
+                headers=headers,
+                timeout=10000
+            )
+            response.raise_for_status()
+            result = response.json()
+            print(f"[API] 警报接口调用成功: {result}")
+            return result
+        except Exception as e:
+            print(f"[API] 警报接口调用失败: {e}")
+            return {"status": "error", "message": str(e)}
+
+
+_alert_client = None
+_alert_client_lock = threading.Lock()
+
+
+def get_alert_client() -> AlertClient:
+    global _alert_client
+    if _alert_client is None:
+        with _alert_client_lock:
+            if _alert_client is None:
+                _alert_client = AlertClient()
+    return _alert_client
+
+
+def send_alert(detection_count: int, image_path: str = "", frame_info: dict | None = None, frame: Any = None) -> dict:
     """
-    模拟警报接口 - 当检测到人员时调用
+    真实警报接口 - 当检测到人员时调用
     
     参数:
         detection_count: 检测到的人员数量
         image_path: 触发警报的图片路径或来源
         frame_info: 额外的帧信息（用于实时识别时传递）
+        frame: 当前帧图像数据（用于实时识别时保存到本地再上传）
     
     返回:
         警报接口响应结果
-    
-    注意:
-        这是一个模拟接口，后续需要替换为真实的警报接口调用
-        替换时只需修改此函数的实现即可
     """
-    alert_data = {
-        "alert_type": "person_detected",
-        "detection_count": detection_count,
-        "image_path": image_path,
-        "timestamp": "",
-        "status": "triggered",
-        "message": f"检测到 {detection_count} 个人员，已触发警报",
-    }
-    
-    if frame_info:
-        alert_data["frame_info"] = frame_info
-    
-    import datetime
-    alert_data["timestamp"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
-    print(f"[ALERT] 警报触发: {alert_data['message']}")
-    print(f"[ALERT] 详细信息: {alert_data}")
-    
-    return alert_data
+    try:
+        client = get_alert_client()
+        
+        alarm_no = client._generate_alarm_no()
+        alarm_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        camera_location = "A区北门"
+        if frame_info and "camera" in frame_info:
+            camera_location = f"{frame_info['camera']}摄像头"
+        
+        oss_url = ""
+        upload_image_path = image_path
+        
+        if frame is not None and frame_info:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            camera_name = frame_info.get("camera", "unknown")
+            temp_filename = f"person_{timestamp}_{camera_name}.jpg"
+            temp_path = OUTPUTS_DIR / temp_filename
+            OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
+            cv2.imwrite(str(temp_path), frame)
+            upload_image_path = str(temp_path)
+            print(f"[ALERT] 已保存临时图片: {temp_path}")
+        
+        if upload_image_path and Path(upload_image_path).exists():
+            try:
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                object_name = f"person_alert/{timestamp}_{Path(upload_image_path).name}"
+                oss_url = client.upload_to_oss(upload_image_path, object_name)
+            except Exception as e:
+                print(f"[OSS] 上传失败: {e}")
+                oss_url = ""
+        
+        raw_data = f"confidence\":\"0.93\",\"cameraPoint\":\"{camera_location}"
+        
+        alarm_data = {
+            "alarmNo": alarm_no,
+            "sourceSystem": "IOT_PLATFORM",
+            "deviceCode": "BEHAVIOR_CAMERA_001",
+            "abnormalType": "ILLEGAL_INTRUSION",
+            "alarmLevel": "L3",
+            "currentValue": "-",
+            "evidenceUrl": oss_url,
+            "alarmTime": alarm_time,
+            "rawData": raw_data
+        }
+        
+        print(f"[ALERT] 警报触发: 检测到 {detection_count} 个人员")
+        print(f"[ALERT] 警报编号: {alarm_no}")
+        print(f"[ALERT] 证据URL: {oss_url}")
+        
+        api_result = client.send_alert_request(alarm_data)
+        
+        return {
+            "status": "success",
+            "alarm_no": alarm_no,
+            "oss_url": oss_url,
+            "api_result": api_result
+        }
+        
+    except Exception as e:
+        print(f"[ALERT] 警报处理失败: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 class PersonDetector:
@@ -407,6 +528,7 @@ class PersonDetector:
                                 detection_count=1,
                                 image_path=f"camera:{camera}",
                                 frame_info=frame_info,
+                                frame=frame,
                             )
                             alerted_track_ids.add(det.track_id)
                             track_id_timeout[det.track_id] = frame_count
@@ -417,6 +539,7 @@ class PersonDetector:
                             detection_count=1,
                             image_path=f"camera:{camera}",
                             frame_info={"frame_number": frame_count, "camera": camera},
+                            frame=frame,
                         )
 
                 expired_ids = []
