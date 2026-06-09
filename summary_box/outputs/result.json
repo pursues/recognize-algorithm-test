@@ -1,0 +1,28 @@
+[
+  {
+    "feature": "person",
+    "display_name": "人员识别模型",
+    "model": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/person/yolov8n.pt",
+    "image": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/person/imgs/person.jpeg",
+    "expected_labels": [
+      "person"
+    ],
+    "person_count": 1,
+    "has_person": true,
+    "detections": [
+      {
+        "label": "person",
+        "confidence": 0.8375,
+        "xyxy": [
+          322.86,
+          125.49,
+          857.02,
+          749.82
+        ],
+        "track_id": 1
+      }
+    ],
+    "save_vis": true,
+    "output_dir": "/Users/pursues/Desktop/project/huitian/python/recognize-algorithm-test/person/outputs"
+  }
+]
