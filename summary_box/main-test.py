@@ -5,95 +5,122 @@ import json
 from pathlib import Path
 
 from config import (
+    BEHAVIOR_CONFIG,
     DEFAULT_MODEL_PATH,
+    IMAGE_SUFFIXES,
     OUTPUTS_DIR,
     TEST_IMAGES_DIR,
+    classify_behaviors,
+    cv2,
+    initialize_runtime,
 )
 from detector import PersonDetector
-from person import FEATURE_CONFIG
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="测试 person 目录下的人员识别模型。")
-    parser.add_argument("--image", type=Path, help="待检测图片路径。如果不提供，将尝试测试 imgs 目录下的图片。")
+    parser = argparse.ArgumentParser(
+        description="行为识别测试入口 - 使用 best.pt 模型对 imgs 下图片进行测试"
+    )
+    parser.add_argument("--image", type=Path, help="单独测试一张图片")
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL_PATH, help="模型路径")
     parser.add_argument("--conf", type=float, help="置信度阈值")
     parser.add_argument("--iou", type=float, help="NMS IoU 阈值")
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        default=OUTPUTS_DIR,
-        help="可视化结果输出目录",
-    )
-    parser.add_argument(
-        "--no-save-vis",
-        action="store_true",
-        help="不保存带检测框的可视化结果",
-    )
+    parser.add_argument("--no-save-vis", action="store_true", help="不保存带检测框的可视化结果")
+    parser.add_argument("--output-dir", type=Path, default=OUTPUTS_DIR, help="输出根目录")
     return parser
 
 
 def main() -> None:
     args = build_parser().parse_args()
+    initialize_runtime()
+
     model_path = args.model.resolve()
+    print(f"加载模型: {model_path}")
 
     detector = PersonDetector(
         model_name=str(model_path),
         conf=args.conf,
         iou=args.iou,
     )
+    print(f"模型类别: {detector.class_names}")
+
+    output_root = args.output_dir.resolve()
+    output_root.mkdir(parents=True, exist_ok=True)
+    save_vis = not args.no_save_vis
 
     image_paths = []
     if args.image:
         image_paths.append(args.image.resolve())
-    else:
-        if TEST_IMAGES_DIR.exists():
-            for ext in [".jpg", ".jpeg", ".png"]:
-                image_paths.extend(list(TEST_IMAGES_DIR.glob(f"*{ext}")))
+    elif TEST_IMAGES_DIR.exists():
+        for ext in IMAGE_SUFFIXES:
+            image_paths.extend(sorted(TEST_IMAGES_DIR.glob(f"*{ext}")))
 
     if not image_paths:
-        raise FileNotFoundError(f"未找到测试图片。请使用 --image 指定图片路径，或在 {TEST_IMAGES_DIR} 中放置图片。")
-
-    output_dir = args.output_dir.resolve()
-    output_dir.mkdir(parents=True, exist_ok=True)
+        raise FileNotFoundError(f"未找到测试图片。使用 --image 指定路径，或在 {TEST_IMAGES_DIR} 放置图片。")
 
     results = []
     for image_path in image_paths:
         prediction, _ = detector.predict_image(
             image_path=image_path,
-            save=not args.no_save_vis,
-            output_dir=output_dir if not args.no_save_vis else None,
+            save=save_vis,
+            output_dir=output_root if save_vis else None,
         )
 
+        person_dets = [d for d in prediction.detections
+                       if d.label.lower() in ("person",)]
+        behavior_dets = [d for d in prediction.detections
+                         if d.label.lower() not in ("person",)]
+        behaviors = classify_behaviors(prediction.detections)
+        detected_labels = list(set(d.label for d in prediction.detections))
+
+        print(f"\n{'='*60}")
+        print(f"图片: {image_path.name}")
+        print(f"{'='*60}")
+        print(f"  检测到 {len(person_dets)} 人 / {len(behavior_dets)} 个行为目标")
+
+        if behaviors:
+            print(f"  匹配的行为:")
+            for bname, bdets in behaviors.items():
+                binfo = BEHAVIOR_CONFIG.get(bname, {})
+                blabels = list(set(d.label for d in bdets))
+                print(f"    - {binfo.get('display_name', bname)}: {blabels} (共{len(bdets)}个)")
+        elif prediction.detected:
+            print(f"  检测到但未匹配已知行为: {detected_labels}")
+        else:
+            print(f"  未检测到任何目标")
+
         result = {
-            "feature": FEATURE_CONFIG.name,
-            "display_name": FEATURE_CONFIG.display_name,
             "model": str(model_path),
             "image": str(image_path),
-            "expected_labels": list(FEATURE_CONFIG.expected_labels),
-            "person_count": len(prediction.detections),
-            "has_person": prediction.detected,
+            "person_count": len(person_dets),
+            "behavior_count": len(behavior_dets),
+            "detected_labels": detected_labels,
+            "total_detections": len(prediction.detections),
+            "has_detection": prediction.detected,
+            "matched_behaviors": list(behaviors.keys()) if behaviors else [],
             "detections": [
                 {
-                    "label": detection.label,
-                    "confidence": round(detection.confidence, 4),
-                    "xyxy": [round(value, 2) for value in detection.xyxy],
-                    "track_id": detection.track_id,
+                    "label": d.label,
+                    "confidence": round(d.confidence, 4),
+                    "xyxy": [round(v, 2) for v in d.xyxy],
+                    "track_id": d.track_id,
                 }
-                for detection in prediction.detections
+                for d in prediction.detections
             ],
-            "save_vis": not args.no_save_vis,
-            "output_dir": str(output_dir),
         }
         results.append(result)
-        print(json.dumps(result, ensure_ascii=False, indent=2))
 
-    result_file = output_dir / "result.json"
+    total = len(results)
+    detected_count = sum(1 for r in results if r["has_detection"])
+    with_behavior = sum(1 for r in results if r["matched_behaviors"])
+    print(f"\n汇总: 总数={total} | 有检测={detected_count} | 匹配行为={with_behavior}")
+
+    result_file = output_root / "result.json"
     result_file.write_text(
         json.dumps(results, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-    print(f"\n详细结果已保存至 {result_file}")
+    print(f"详细结果已保存至 {result_file}")
 
 
 if __name__ == "__main__":

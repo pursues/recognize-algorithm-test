@@ -44,11 +44,60 @@ try:
 except ImportError:
     cv2 = None
 
-DEFAULT_MODEL_NAME = "yolov8n.pt"
+DEFAULT_MODEL_NAME = "best.pt"
 DEFAULT_MODEL_PATH = ROOT_DIR / DEFAULT_MODEL_NAME
 DEFAULT_CONF = 0.35
 DEFAULT_IOU = 0.45
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+
+# 行为分类配置：行为名称 → 显示名 + 模型实际标签名（精确匹配）
+# 模型实际类别: {0:Phones, 1:mask, 2:no_mask, 3:people-tdKX, 4:fall, 5:not fall, 6:fire, 7:smoke, 8:helmet_no, 9:helmet_yes}
+BEHAVIOR_CONFIG = {
+    "fallDown": {
+        "display_name": "摔倒检测",
+        "expected_labels": ("fall",),
+    },
+    "fireSmoke": {
+        "display_name": "烟雾火灾检测",
+        "expected_labels": ("fire", "smoke"),
+    },
+    "helmet": {
+        "display_name": "安全帽检测",
+        "expected_labels": ("helmet_no", "helmet_yes"),
+    },
+    "phone": {
+        "display_name": "玩手机检测",
+        "expected_labels": ("Phones",),
+    },
+    "smoking": {
+        "display_name": "抽烟检测",
+        "expected_labels": (),
+    },
+    "faceMask": {
+        "display_name": "戴口罩检测",
+        "expected_labels": ("mask", "no_mask"),
+    },
+}
+
+def classify_behaviors(detections: list[Detection]) -> dict[str, list[Detection]]:
+    """将检测结果按行为类型分类（精确标签匹配）。
+
+    返回: {behavior_name: [匹配的Detection, ...]}
+    """
+    result: dict[str, list[Detection]] = {}
+    for behavior, info in BEHAVIOR_CONFIG.items():
+        expected = info["expected_labels"]
+        if not expected:
+            continue
+        matched = []
+        for det in detections:
+            label_lower = det.label.lower()
+            if any(label_lower == exp.lower() for exp in expected):
+                matched.append(det)
+        if matched:
+            result[behavior] = matched
+    return result
+
 
 _RUNTIME_INITIALIZED = False
 _ORIGINAL_TORCH_LOAD = torch.load

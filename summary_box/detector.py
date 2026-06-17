@@ -18,9 +18,10 @@ from config import (
 
 
 class PersonDetector:
-    """通用检测器 - 使用 YOLOv8n 模型进行人员检测和 ByteTrack 跟踪
+    """通用检测器 - 使用 YOLO 模型进行多类别行为检测和 ByteTrack 跟踪
 
-    只负责模型推理和检测结果构建，不包含任何业务逻辑（闯入判断、报警等）。
+    支持：人员、摔倒、抽烟、玩手机、安全帽、烟雾火灾等多种行为识别。
+    只负责模型推理和检测结果构建，不包含任何业务逻辑。
     """
 
     def __init__(
@@ -35,7 +36,6 @@ class PersonDetector:
         self.model = YOLO(str(self.model_path))
         self.model.overrides["conf"] = DEFAULT_CONF if conf is None else conf
         self.model.overrides["iou"] = DEFAULT_IOU if iou is None else iou
-        self.model.overrides["classes"] = [0]  # COCO person class
 
     @property
     def class_names(self) -> dict[int, str]:
@@ -76,14 +76,15 @@ class PersonDetector:
         for det in prediction.detections:
             x1, y1, x2, y2 = map(int, det.xyxy)
             cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            label_text = f"person {det.confidence:.2f}"
+            label_text = f"{det.label} {det.confidence:.2f}"
             if det.track_id is not None:
                 label_text += f" id:{det.track_id}"
             cv2.putText(annotated_frame, label_text, (x1, max(y1 - 10, 0)),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
         if prediction.detections:
-            alert_text = f"ALERT: {len(prediction.detections)} person(s) detected!"
+            labels = set(d.label for d in prediction.detections)
+            alert_text = f"ALERT: {len(prediction.detections)} object(s) detected: {', '.join(labels)}"
             cv2.putText(annotated_frame, alert_text, (10, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
