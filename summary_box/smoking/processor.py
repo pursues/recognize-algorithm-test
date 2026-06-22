@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 DISPLAY_NAME = "抽烟检测"
-EXPECTED_LABELS = ()
+EXPECTED_LABELS = ("smoking",)
 
 
 def process(

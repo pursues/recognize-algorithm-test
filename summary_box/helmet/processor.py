@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 DISPLAY_NAME = "安全帽检测"
-EXPECTED_LABELS = ("helmet_no", "helmet_yes")
+EXPECTED_LABELS = ("helmet",)
 
 
 def process(

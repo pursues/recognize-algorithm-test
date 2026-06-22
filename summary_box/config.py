@@ -51,7 +51,7 @@ DEFAULT_IOU = 0.45
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
 # 行为分类配置：行为名称 → 显示名 + 模型实际标签名（精确匹配）
-# 模型实际类别: {0:Phones, 1:mask, 2:no_mask, 3:people-tdKX, 4:fall, 5:not fall, 6:fire, 7:smoke, 8:helmet_no, 9:helmet_yes}
+# 模型实际类别: {0:phones, 1:mask, 2:no_mask, 3:fall, 4:fire, 5:smoke, 6:helmet, 7:smoking}
 BEHAVIOR_CONFIG = {
     "fallDown": {
         "display_name": "摔倒检测",
@@ -63,15 +63,15 @@ BEHAVIOR_CONFIG = {
     },
     "helmet": {
         "display_name": "安全帽检测",
-        "expected_labels": ("helmet_no", "helmet_yes"),
+        "expected_labels": ("helmet",),
     },
     "phone": {
         "display_name": "玩手机检测",
-        "expected_labels": ("Phones",),
+        "expected_labels": ("phones",),
     },
     "smoking": {
         "display_name": "抽烟检测",
-        "expected_labels": (),
+        "expected_labels": ("smoking",),
     },
     "faceMask": {
         "display_name": "戴口罩检测",
